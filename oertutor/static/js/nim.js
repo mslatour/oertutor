@@ -68,9 +68,9 @@ NimGame = function(opt = {}){
             "agent" : agent,
             "stacks" : _self.stacks,
             "stack": stack,
-            "reduction": reducation
+            "reduction": reduction
         }
-        _self.stacks[stack] -= reducation
+        _self.stacks[stack] -= reduction
     }
 
     init(opt);
