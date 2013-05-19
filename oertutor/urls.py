@@ -1,10 +1,12 @@
 from django.conf.urls import patterns, include, url
+from oertutor.views import *
 
 # Uncomment the next two lines to enable the admin:
 # from django.contrib import admin
 # admin.autodiscover()
 
-urlpatterns = patterns('',
+urlpatterns = patterns('oertutor.views',
+    url(r'^$', interface, name='interface'),
     # Examples:
     # url(r'^$', 'oertutor.views.home', name='home'),
     # url(r'^oertutor/', include('oertutor.foo.urls')),

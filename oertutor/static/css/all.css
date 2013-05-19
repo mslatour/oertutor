@@ -1,0 +1,33 @@
+/*table .btn {
+  padding: 1px 5px 1px;
+  font-size: 9px;
+  margin-right: -3px;
+}*/
+
+body {
+    padding-top: 50px;
+}
+
+#app {
+    text-align: center;
+}
+
+.table td {
+    vertical-align: middle;
+}
+
+.table td.buttons {
+    text-align:right;
+}
+
+#loginModal .error {
+  display: none;
+}
+
+.logged-in {
+  display: none;
+}
+
+.logged-in .user {
+  color: #DD0000;
+}
