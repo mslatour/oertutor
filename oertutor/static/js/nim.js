@@ -71,24 +71,70 @@ function NimGame(opt){
 
     // Render the game state
     _s.render = function(){
-        body = "| "+_s.stacks.join(" | ")+" |";
+        body = "";
+        for(var i = 0; i < _s.playback.length; i++){
+            p = _s.playback[i];
+            body += "| "+p.stacks.join(" | ")+" | <b>Agent "+p.agent+
+                " reduced stack "+(p.stack+1)+" with "+p.reduction+"</b><br />" ;
+        }
         _s.container.innerHTML = body;
     }
 
     // Apply the selected move
     _s.apply = function(agent, stack, reduction){
-        _s.playback[_s.playback.length] = {
+        _s.playback.push({
             "agent" : agent,
             "stacks" : _s.stacks,
             "stack": stack,
             "reduction": reduction
-        }
+        });
         _s.stacks[stack] -= reduction
     }
 
     // Gets input from the ai player for the next move
     _s.get_ai_input = function(stacks, cb){
-        cb(0,0);
+        // Declare placeholder for non-empty stacks
+        var ne_stacks = new Array();
+
+        var reduction, stack;
+
+        // Calculate the nimsum of the stacks
+        //   and store the indices of nonempty stacks
+        var nimsum_stack = 0;
+        for(var i = 0; i < stacks.length; i++){
+            if(stacks[i] > 0){
+                ne_stacks.push(i);
+                nimsum_stack ^= stacks[i];
+            }
+        }
+        // General case, use the nimsum operator to determine
+        //   which stack should be picked by observing which
+        //   stack decreases in size when nimsum-ed with the 
+        //   nimsum of all the stacks.
+        for(var i = 0; i < ne_stacks.length; i++){
+            stack = ne_stacks[i];
+            // If the nimsum operator 
+            if((stacks[stack]^nimsum_stack) < stacks[stack]){
+                reduction = stacks[stack] - (stacks[stack]^nimsum_stack);
+                cb(stack, reduction);
+                return;
+            }
+
+        }
+        // No stack was reduced by the nimsum operator
+        //   which means the stacks are equally sized.
+        // In that case pick a random stack and either take everything
+        //   or everything but one. The latter is the case when there 
+        //   are an even number of equally sized stacks.
+        var index = Math.floor(Math.random()*ne_stacks.length)
+        stack = ne_stacks[index];
+        if(ne_stacks.length % 2 == 0){
+            reduction = (stacks[stack]>1?stacks[stack]-1:1);
+        }else{
+            reduction = stacks[stack];
+        }
+        cb(stack, reduction);
+        return;
     }
 
     // Gets input from the human player for the next move
