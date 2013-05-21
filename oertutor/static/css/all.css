@@ -31,3 +31,8 @@ body {
 .logged-in .user {
   color: #DD0000;
 }
+
+#oer-container{
+    width: 100%;
+    height: 100%;
+}
