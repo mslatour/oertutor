@@ -8,3 +8,6 @@ import requests, json
 
 def interface(request):
     return render(request, 'index.html')
+
+def nim(request):
+    return render(request, 'nim.html')

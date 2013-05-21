@@ -7,6 +7,7 @@ from oertutor.views import *
 
 urlpatterns = patterns('oertutor.views',
     url(r'^$', interface, name='interface'),
+    url(r'^nim/$', nim, name='nim'),
     # Examples:
     # url(r'^$', 'oertutor.views.home', name='home'),
     # url(r'^oertutor/', include('oertutor.foo.urls')),
