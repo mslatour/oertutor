@@ -1,0 +1,23 @@
+{% extends "index.html" %}
+{% load staticfiles %}
+
+{% block headinclude %}
+<!-- NIM Script -->
+<script src="{% static 'js/nim.js' %}"></script>
+{% endblock %}
+
+{% block content %}
+<script>
+    function init(){
+        // Initialize Nim Game
+        opt = {
+            "container" : document.getElementById("nim-container")
+        }
+        game = new NimGame(opt);
+    }
+    document.body.onload = init;
+</script>
+<div id="nim-container">
+    Loading NIM...
+</div>
+{% endblock %}

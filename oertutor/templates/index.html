@@ -23,8 +23,7 @@
         <script src="{% static 'js/backbone.js' %}"></script>
         <!-- Backbone Auth -->
         <script src="{% static 'js/backbone.basicauth.js' %}"></script>
-        <!-- Main script -->
-        <script src="{% static 'js/all.js' %}"></script>
+        {% block headinclude %}{% endblock %}
     </head>
     <body>
     <div id="app">
@@ -48,6 +47,9 @@
       <div class="row">
         <table class="table table-striped">
         </table>
+        {% block content %}
+        <b>Main content</b>
+        {% endblock %}
     <div id="loginModal" class="modal hide fade" tabindex="-1" role="dialog" aria-labelled-by="myLoginLabel" aria-hidden="true">
       <div class="modal-header">
         <h3>Login</h3>
