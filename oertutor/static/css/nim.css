@@ -1,0 +1,28 @@
+.nim.stackcontainer{
+    position: relative;
+    height: 200px;
+    width: 150px;
+}
+.nim.stack{
+    width: 30px; 
+    font-size: 16px;
+    color: white;
+    background: red;
+    position: absolute;
+    bottom: 0px;
+}
+.nim.stack.empty{
+    color: red;
+    background: white;
+    border: thin solid red;
+}
+
+.nim.stack:hover {
+    background: black;
+    cursor: pointer;
+}
+
+.nim.stack.empty:hover {
+    background: white;
+    cursor: default;
+}
