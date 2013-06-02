@@ -103,3 +103,6 @@ class Grid2DWorld(World):
         return T
 
 gridworld = Grid2DWorld((0,0), (4,4), 0, {(0,3):10,(3,0):-10,(3,3):-10})
+learner = QLearner(0.8,0.8)
+learner.enter_world(gridworld, [RIGHT, LEFT, TOP, DOWN], (0,0))
+print learner.history
