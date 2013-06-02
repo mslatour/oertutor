@@ -91,7 +91,7 @@ class Grid2DWorld(World):
             T[( state[0], (state[1]-1) % self.ydim )] = self.noise/4.0
             # set probability to go in the right direction
             T[( state[0], (state[1]+1) % self.ydim )] = 1.0-self.noise
-        elif action == TOP:
+        elif action == DOWN:
             # set probability to stay in the same location
             T[state] = self.noise/4.0
             # set probability to go in the wrong direction
