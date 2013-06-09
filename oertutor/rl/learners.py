@@ -6,11 +6,14 @@ from time import sleep
 import random
 
 class QLearner:
+    DEFAULT_POLICY = "max" # Options are [random, max]
     history = []
+    label = ""
     
-    def __init__(self, learning_rate, discount):
+    def __init__(self, learning_rate, discount, epsilon):
         self.alpha = learning_rate
         self.gamma = discount
+        self.epsilon = epsilon
 
     def enter_world(self, world, actions, start_state):
         self.actions = actions
@@ -33,23 +36,26 @@ class QLearner:
     def q(self, state, action):
         # Return Q(s,a) if exists, otherwise create it with Q(s,a) = 0
         obj, created = QValue.objects.get_or_create(state=hash(state), \
+                                                    state_desc=state, \
                                                     action=action, \
+                                                    label=self.label, \
                                                     defaults={'value':0.0})
         return obj
-
-    def get_max_q_value(self, state):
-        # Find the maximum value given the state s, i.e. max_a[Q(s,a)]
-        Qs = QValue.objects.filter(state__exact=hash(state)).\
-                annotate(Max('value'))
-        if len(Qs) == 0:
-            return 0
-        else:
-            return Qs[0].value__max
+    
+    def max_q_s_a(self, state):
+        # Find the argmax_a[Q(s,a)] given the state
+        try:
+            obj = QValue.objects.filter(state=hash(state), label=self.label)\
+                    .order_by('-value')[0]
+        except IndexError:
+            obj = None
+        return obj
 
     def update(self, state, action, reward, new_state):
         # est_v is short for estimated value [in s']
         #   current implemented as max_a[ Q(s',a) ]
-        est_v = self.get_max_q_value(new_state)
+        max_qsa = self.max_q_s_a(new_state)
+        est_v = max_qsa.value if max_qsa is not None else 0.0
 
         # The following loop is necessary for dealing with potential
         #  concurrency issues that can occur when multiple agents
@@ -72,7 +78,17 @@ class QLearner:
                 del q
 
     def policy(self):
-        self.action = random.choice(self.actions)
+        if self.DEFAULT_POLICY == "max":
+            if random.random() < self.epsilon:
+                self.action = random.choice(self.actions)
+            else:
+                max_qsa = self.max_q_s_a(self.state)
+                if max_qsa is not None:
+                    self.action = max_qsa.action
+                else:
+                    self.action = random.choice(self.actions)
+        elif self.DEFAULT_POLICY == "random":
+            self.action = random.choice(self.actions)
         return self.action
 
     def observe(self, new_state, reward):
