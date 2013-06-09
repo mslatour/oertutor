@@ -1,4 +1,5 @@
 import random
+import time
 from oertutor.rl.learners import QLearner
 
 # Constants mapping action names to numeric representations
@@ -64,45 +65,78 @@ class Grid2DWorld(World):
 
     def transitions(self, state, action):
         T = {}
+        go_right = lambda s: ((s[0]+1) % self.xdim, s[1])
+        go_left = lambda s: ((s[0]-1) % self.xdim, s[1])
+        go_up = lambda s: (s[0], (s[1]+1) % self.ydim)
+        go_down = lambda s: (s[0], (s[1]-1) % self.ydim)
         if action == RIGHT:
             # set probability to stay in the same location
             T[state] = self.noise/4.0
             # set probability to go in the wrong direction
-            T[( (state[0]-1) % self.xdim, state[1])] = self.noise/4.0
-            T[( state[0], (state[1]+1) % self.ydim )] = self.noise/4.0
-            T[( state[0], (state[1]-1) % self.ydim )] = self.noise/4.0
+            T[go_left(state)] = self.noise/4.0
+            T[go_up(state)] = self.noise/4.0
+            T[go_down(state)] = self.noise/4.0
             # set probability to go in the right direction
-            T[( (state[0]+1) % self.xdim, state[1])] = 1.0-self.noise
+            T[go_right(state)] = 1.0-self.noise
         elif action == LEFT:
             # set probability to stay in the same location
             T[state] = self.noise/4.0
             # set probability to go in the wrong direction
-            T[( (state[0]+1) % self.xdim, state[1])] = self.noise/4.0
-            T[( state[0], (state[1]+1) % self.ydim )] = self.noise/4.0
-            T[( state[0], (state[1]-1) % self.ydim )] = self.noise/4.0
+            T[go_right(state)] = self.noise/4.0
+            T[go_up(state)] = self.noise/4.0
+            T[go_down(state)] = self.noise/4.0
             # set probability to go in the right direction
-            T[( (state[0]-1) % self.xdim, state[1])] = 1.0-self.noise
+            T[go_left(state)] = 1.0-self.noise
         elif action == TOP:
             # set probability to stay in the same location
             T[state] = self.noise/4.0
             # set probability to go in the wrong direction
-            T[( (state[0]+1) % self.xdim, state[1])] = self.noise/4.0
-            T[( (state[0]-1) % self.xdim, state[1])] = self.noise/4.0
-            T[( state[0], (state[1]-1) % self.ydim )] = self.noise/4.0
+            T[go_right(state)] = self.noise/4.0
+            T[go_left(state)] = self.noise/4.0
+            T[go_down(state)] = self.noise/4.0
             # set probability to go in the right direction
-            T[( state[0], (state[1]+1) % self.ydim )] = 1.0-self.noise
+            T[go_up(state)] = 1.0-self.noise
         elif action == DOWN:
             # set probability to stay in the same location
             T[state] = self.noise/4.0
             # set probability to go in the wrong direction
-            T[( (state[0]+1) % self.xdim, state[1])] = self.noise/4.0
-            T[( (state[0]-1) % self.xdim, state[1])] = self.noise/4.0
-            T[( state[0], (state[1]+1) % self.ydim )] = self.noise/4.0
+            T[go_right(state)] = self.noise/4.0
+            T[go_left(state)] = self.noise/4.0
+            T[go_up(state)] = self.noise/4.0
             # set probability to go in the right direction
-            T[( state[0], (state[1]-1) % self.ydim )] = 1.0-self.noise
+            T[go_down(state)] = 1.0-self.noise
         return T
 
-gridworld = Grid2DWorld((0,0), (4,4), 0, {(0,3):10,(3,0):-10,(3,3):-10})
-learner = QLearner(0.8,0.8)
-learner.enter_world(gridworld, [RIGHT, LEFT, TOP, DOWN], (0,0))
-print learner.history
+    def pp_learned(self, learner):
+        actions = [u'\u2192',u'\u2190',u'\u2191',u'\u2193']
+        cell = 5
+        pp = ""
+        for y in range(self.ydim-1,-1,-1):
+            line = []
+            for x in range(self.xdim):
+                if (x,y) in self.reward_spots:
+                    line.append(str(self.reward_spots[(x,y)]).center(cell))
+                else:
+                    max_qsa = learner.max_q_s_a((x,y))
+                    if max_qsa is None:
+                        line.append("?".center(cell))
+                    else:
+                        line.append(actions[max_qsa.action].center(cell))
+            line = "| %s |" % " | ".join(line)
+            pp += line + "\n"
+            pp += "-"*len(line) + "\n"
+        print "-"*len(line)
+        print pp
+
+for uncertainty in [0.0,0.2,0.4,0.6]:
+    for epsilon in [0.1,0.2,0.4,0.6]:
+        print "Uncertainty: %f, Epsilon: %f" % (uncertainty,epsilon)
+        gridworld = Grid2DWorld((0,0), (4,4), uncertainty, \
+                {(3,3):10,(3,0):-10,(0,3):-10})
+        learner = QLearner(0.8,0.8,epsilon)
+        learner.label = "%f,%f" % (uncertainty, epsilon)
+        for i in range(100):
+            learner.enter_world(gridworld, [RIGHT, LEFT, TOP, DOWN], (0,0))
+            learner.history = []
+            gridworld.state = (0,0)
+        gridworld.pp_learned(learner)
