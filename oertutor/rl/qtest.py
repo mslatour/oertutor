@@ -128,15 +128,23 @@ class Grid2DWorld(World):
         print "-"*len(line)
         print pp
 
-for uncertainty in [0.0,0.2,0.4,0.6]:
-    for epsilon in [0.1,0.2,0.4,0.6]:
+def test(uncertainty, epsilon):
+    gridworld = Grid2DWorld((0,0), (8,8), uncertainty, \
+            {(4,4):10,(6,0):-10,(0,6):-10})
+    learner = QLearner(0.8,0.8,epsilon)
+    if epsilon is not None:
         print "Uncertainty: %f, Epsilon: %f" % (uncertainty,epsilon)
-        gridworld = Grid2DWorld((0,0), (4,4), uncertainty, \
-                {(3,3):10,(3,0):-10,(0,3):-10})
-        learner = QLearner(0.8,0.8,epsilon)
-        learner.label = "%f,%f" % (uncertainty, epsilon)
-        for i in range(100):
-            learner.enter_world(gridworld, [RIGHT, LEFT, TOP, DOWN], (0,0))
-            learner.history = []
-            gridworld.state = (0,0)
-        gridworld.pp_learned(learner)
+        learner.label = "%f,%f,(8,8)" % (uncertainty, epsilon)
+    else:
+        print "Uncertainty: %f, Epsilon: auto" % (uncertainty,)
+        learner.label = "%f,auto, (8,8)" % (uncertainty,)
+    for i in range(100):
+        learner.enter_world(gridworld, [RIGHT, LEFT, TOP, DOWN], (0,0))
+        learner.history = []
+        gridworld.state = (0,0)
+    gridworld.pp_learned(learner)
+
+for uncertainty in [0.0,0.2,0.4,0.6]:
+    test(uncertainty, None);
+    for epsilon in [0.1,0.2,0.4,0.6]:
+        test(uncertainty, epsilon);

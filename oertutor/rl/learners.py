@@ -1,7 +1,8 @@
-from django.db.models import Max
+from django.db.models import Max, Sum
 from django.db import connection
 from oertutor.rl.models import QValue
 from concurrency.exceptions import RecordModifiedError
+from django.core.exceptions import ObjectDoesNotExist
 from time import sleep
 import random
 
@@ -40,7 +41,17 @@ class QLearner:
                                                     action=action, \
                                                     label=self.label, \
                                                     defaults={'value':0.0})
-        return obj
+        return (obj, created)
+
+    def state_confidence(self, state):
+        try:
+            obj = QValue.objects.values('state','label').annotate(belief=Sum('version')).\
+                    get(state=hash(state), label=self.label)
+            belief = obj["belief"]
+        except ObjectDoesNotExist:
+            belief = 0
+        return belief
+
     
     def max_q_s_a(self, state):
         # Find the argmax_a[Q(s,a)] given the state
@@ -63,7 +74,7 @@ class QLearner:
         saved = False
         while not saved:
             # Fetch the QValue q we are going to update
-            q = self.q(state, action)
+            q, created = self.q(state, action)
             
             # Update Q(s,a)
             q.value = self.alpha * \
@@ -78,8 +89,14 @@ class QLearner:
                 del q
 
     def policy(self):
+        if self.epsilon is None:
+            N = self.state_confidence(self.state)
+            epsilon = 1.0/((N/100.0)+1)
+        else:
+            epsilon = self.epsilon
+
         if self.DEFAULT_POLICY == "max":
-            if random.random() < self.epsilon:
+            if random.random() < epsilon:
                 self.action = random.choice(self.actions)
             else:
                 max_qsa = self.max_q_s_a(self.state)
