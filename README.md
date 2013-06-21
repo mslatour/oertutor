@@ -25,9 +25,9 @@ Fetch the code and install the required python modules in a virtual environment.
 
 Setting up the database
 -----------------------
-The following commands use 'root' as MySQL administrator user. For more information and other setups see: http://dev.mysql.com/doc/refman/5.1/en/adding-users.html
+The following commands use 'root' as MySQL administrator user. You can use different account details for the django user, just make the same adjustments in the settings.py file. For more information and other setups see: http://dev.mysql.com/doc/refman/5.1/en/adding-users.html
 
-    sudo service mysqld start (start webserver)
+    sudo service mysqld start
     mysqladmin -uroot -p create oertutor
     mysql -uroot -p -e "CREATE USER 'django'@'localhost' IDENTIFIED BY 'djngpwd'"
     mysql -uroot -p -e "GRANT ALL PRIVILEGES ON oertutor.* TO 'django'@'localhost'"
@@ -38,11 +38,11 @@ Make sure you are in the working directory and then run the following command to
 
 Running
 -------
-Start the django server.
+Start the mysql server.
 
     sudo service mysqld start
 
-Make sure you are in the working directory
+Make sure you are in the working directory, activate the virtual environment and run the django server.
     
     . venv/bin/activate
     python manage.py runserver # Default: http://127.0.0.1:8000
