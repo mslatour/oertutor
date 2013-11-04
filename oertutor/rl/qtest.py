@@ -129,15 +129,15 @@ class Grid2DWorld(World):
         print pp
 
 def test(uncertainty, epsilon):
-    gridworld = Grid2DWorld((0,0), (8,8), uncertainty, \
-            {(4,4):10,(6,0):-10,(0,6):-10})
+    gridworld = Grid2DWorld((0,0), (5,5), uncertainty, \
+            {(4,4):10})
     learner = QLearner(0.8,0.8,epsilon)
     if epsilon is not None:
         print "Uncertainty: %f, Epsilon: %f" % (uncertainty,epsilon)
-        learner.label = "%f,%f,(8,8)" % (uncertainty, epsilon)
+        learner.label = "%f,%f,(5,5)" % (uncertainty, epsilon)
     else:
         print "Uncertainty: %f, Epsilon: auto" % (uncertainty,)
-        learner.label = "%f,auto, (8,8)" % (uncertainty,)
+        learner.label = "%f,auto, (5,5)" % (uncertainty,)
     for i in range(100):
         learner.enter_world(gridworld, [RIGHT, LEFT, TOP, DOWN], (0,0))
         learner.history = []
