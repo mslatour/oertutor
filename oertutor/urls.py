@@ -1,6 +1,6 @@
 from django.conf.urls import patterns, include, url
 from oertutor.views import *
-from oertutor.tutor.views import tutor
+from oertutor.tutor.views import *
 
 # Uncomment the next two lines to enable the admin:
 # from django.contrib import admin
@@ -10,6 +10,7 @@ urlpatterns = patterns('oertutor.views',
     url(r'^$', interface, name='interface'),
     url(r'^nim/$', nim, name='nim'),
     url(r'^tutor/$', tutor, name='tutor'),
+    url(r'^tutor/observation/$', observation, name='observation'),
     # Examples:
     # url(r'^$', 'oertutor.views.home', name='home'),
     # url(r'^oertutor/', include('oertutor.foo.urls')),
