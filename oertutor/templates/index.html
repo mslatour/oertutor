@@ -27,29 +27,62 @@
     </head>
     <body>
     <div id="app">
-    <div class="navbar navbar-inverse navbar-fixed-top">
-      <div class="navbar-inner">
-        <div class="container">
-          <a class="brand" href="#">OER Tutor</a>
-          <ul class="nav pull-right">
-            <li class="logged-in dropdown">
-              <a href="#" class="user dropdown-toggle" data-toggle="dropdown"><span class="username"></span><b class="caret"></b></a>
-              <ul class="dropdown-menu">
-                <li><a href="#" role="menuitem" id="logoutButton">Logout</a></li>
-              </ul>
-            </li>
-            <li class="logged-out"><a href="#loginModal" data-toggle="modal">Login</a></li>
-          </ul>
-        </div>
-      </div>
+		<div class="navbar navbar-inverse navbar-fixed-top">
+		  <div class="navbar-inner">
+			<div class="container">
+			  <a class="brand" href="#">OER Tutor</a>
+			  <ul class="nav pull-right">
+				<li class="logged-in dropdown">
+				  <a href="#" class="user dropdown-toggle" data-toggle="dropdown"><span class="username"></span><b class="caret"></b></a>
+				  <ul class="dropdown-menu">
+					<li><a href="#" role="menuitem" id="logoutButton">Logout</a></li>
+				  </ul>
+				</li>
+				<li class="logged-out"><a href="#loginModal" data-toggle="modal">Login</a></li>
+			  </ul>
+			</div>
+		  </div>
+		</div>
+		<div class="container-fluid">
+			<div class='row-fluid'>
+				<div class="span2">
+					<h3>{{ curriculum.title }}</h3>
+					<table class='table'>
+						{% for kc in kcs %}
+						{% if kc.id == selected_kc %}
+						<tr class='success'>
+						{% else %}
+						<tr>
+						{% endif %}
+							<td>
+								<h1>{{ forloop.counter }}</h1>
+							</td>
+							<td>
+								<a href="/?select={{ forloop.counter0 }}">
+									<strong>{{ kc.title }}</strong>
+								</a>
+								<p>{{ kc.description }}</p>
+							</td>
+						</tr>
+						{% endfor %}
+					</table>
+				</div>
+				<div class="span10">
+					{% block content %}
+					<div class='hero-unit'>
+						<h1>Topic: {{ curriculum.title }}</h1>
+						<p>{{ curriculum.description }}</p>
+						<p>
+							<a class="btn btn-primary btn-large" href="/?select=start">
+								Start
+							</a>
+						</p>
+					</div>
+					{% endblock %}
+				</div>
+			</div>
+		</div>
     </div>
-    <div class="container">
-      <div class="row">
-        <table class="table table-striped">
-        </table>
-        {% block content %}
-        <b>Main content</b>
-        {% endblock %}
     <div id="loginModal" class="modal hide fade" tabindex="-1" role="dialog" aria-labelled-by="myLoginLabel" aria-hidden="true">
       <div class="modal-header">
         <h3>Login</h3>
@@ -76,13 +109,7 @@
         <button class="btn btn-primary" id="loginButton">Login</button>
       </div>
     </div>
-        </div>
-    </div>
-    </div>
 
-    <script id="ideaRowTpl" type="text/template">
-<td class="span1 idea-id"><%= id %></td><td class="span5"><%= title %></td><td class="span3"><span class="linked"></span></td><td class="buttons span3"><button type="button" id="id_delete" class="btn btn-danger"><i class="icon-trash icon-white"></i> Delete</button>
-    </script>
     <script id="verificationTpl" type="text/template">
 Are you sure? <div class="verify btn-group"><button class="btn btn-danger yes">Yes</button><button class="btn no">No</button></div>
 </script>

@@ -8,12 +8,22 @@ body {
     padding-top: 50px;
 }
 
-#app {
-    text-align: center;
-}
-
 .table td {
     vertical-align: middle;
+}
+
+.kc {
+    height: 80px;
+    margin: 5px 0 5px 0;
+    background: LightYellow;
+    color: DarkRed;
+    padding: 5px;
+}
+
+.kc h2 {
+    font-size: 16px;
+    font-weight: bold;;
+    margin: 0px;
 }
 
 .table td.buttons {
