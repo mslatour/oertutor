@@ -8,9 +8,16 @@ function NimGame(opt){
     _s.stacks = new Array( 3, 4, 5);
     // Defines whose turn it is, -1 = AI, 1 = Human
     _s.turn = 1;
-    
+
+	// Determine display
+	_s.display_turn = true;
+	_s.display_playback = false;
+
     // History of actions
     _s.playback = new Array();
+
+	// Winner of the game
+	winner = undefined
 
     // Callback function that is executed on finish
     // Arguments:
@@ -39,7 +46,8 @@ function NimGame(opt){
     _s.play = function(){
         // Check if game is not already finished, if so: exec callback and exit
         if(_s.is_finished()){
-            _s.cb_finished(-1*_s.turn, _s.playback);
+			winner = -1*_s.turn;
+            _s.cb_finished(winner, _s.playback);
             _s.render();
             return;
         }
@@ -70,13 +78,13 @@ function NimGame(opt){
 
     // Initialize rendering
     _s.init_render = function(){
-        // Creating div to put log message in
-        var logger = document.createElement("div");
-        logger.id = "nim-logger";
-        // Append logger to the output container
-        _s.container.appendChild(logger);
-        
-        // Create a container for the stacks
+		// Creating div to put log message in
+		var msg = document.createElement("div");
+		msg.id = "nim-msg";
+		// Append msg container to the output container
+		_s.container.appendChild(msg);
+
+		// Create a container for the stacks
         var stackcontainer = document.createElement("div");
         stackcontainer.id = "nim-stack-container";
         stackcontainer.className = "nim stackcontainer";
@@ -85,15 +93,31 @@ function NimGame(opt){
 
     // Render the game state
     _s.render = function(clickcb){
-        // Generating log message;
-        log = "";
-        for(var i = 0; i < _s.playback.length; i++){
-            p = _s.playback[i];
-            log += "| "+p.stacks.join(" | ")+" | <b>Agent "+p.agent+
-                " reduced stack "+(p.stack+1)+" with "+p.reduction+"</b><br />" ;
-        }
-        // Add log message to logger
-        document.getElementById("nim-logger").innerHTML = log;
+		if(_s.is_finished()){
+			msg = (winner == 1? "You won!" : "Computer won!")
+			// Display log message
+			document.getElementById("nim-msg").innerHTML = msg;
+			// Clear container for the stacks
+			var stackcontainer = document.getElementById("nim-stack-container");
+			stackcontainer.innerHTML = "";
+			return true;
+		}
+		if( _s.display_playback ){
+			// Generating log message;
+			log = "";
+			for(var i = 0; i < _s.playback.length; i++){
+				p = _s.playback[i];
+				log += "| "+p.stacks.join(" | ")+" | <b>Agent "+p.agent+
+					" reduced stack "+(p.stack+1)+" with "+p.reduction+"</b><br />" ;
+			}
+			// Display log message
+			document.getElementById("nim-msg").innerHTML = log;
+		}
+		if( _s.display_turn ){
+			turn = (_s.turn == 1? "Your turn" : "Computer turn")
+			// Display turn message
+			document.getElementById("nim-msg").innerHTML = turn;
+		}
 
         // Clear container for the stacks
         var stackcontainer = document.getElementById("nim-stack-container");
