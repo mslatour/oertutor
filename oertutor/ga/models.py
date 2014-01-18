@@ -132,6 +132,24 @@ class Chromosome(models.Model):
                 other.save()
         return True
 
+    def __copy__(self):
+        # Create a chromosome with the same age
+        copy = Chromosome.objects.create(age=self.age)
+        # Add the same genes to the new chromosome
+        for member in ChromosomeMembership.objects.filter(chromosome=self):
+            ChromosomeMembership.objects.create(
+                    gene = member.gene,
+                    chromosome = copy,
+                    index = member.index
+            )
+        # Add the same parents to the new chromosome
+        for parent in self.parents.all():
+            copy.parents.add(parent)
+        return copy
+
+    def __deepcopy__(self):
+        self.__copy__(self)
+
     def __str__(self):
         return self.__repr__();
 
