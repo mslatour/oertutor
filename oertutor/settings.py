@@ -125,7 +125,8 @@ INSTALLED_APPS = (
     'django.contrib.sessions',
     'concurrency',
     'oertutor.tutor',
-    'oertutor.rl'
+    'oertutor.rl',
+    'oertutor.ga'
 )
 
 # A sample logging configuration. The only tangible logging
