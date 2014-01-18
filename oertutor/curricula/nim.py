@@ -103,3 +103,21 @@ def load_db():
     )
     if created:
         resource.save()
+
+    resource, created = Resource.objects.get_or_create(
+        title = "Learn about binary numbers",
+        source = "/static/html/oer6.html",
+        tm = tell,
+        kc = kcs['binary']
+    )
+    if created:
+        resource.save()
+
+    resource, created = Resource.objects.get_or_create(
+        title = "What is this XOR?",
+        source = "/static/html/oer7.html",
+        tm = tell,
+        kc = kcs['xor']
+    )
+    if created:
+        resource.save()
