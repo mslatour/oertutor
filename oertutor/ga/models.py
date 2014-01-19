@@ -3,6 +3,44 @@ from django.db import models
 class Gene(models.Model):
     name = models.CharField(max_length=255)
 
+    @staticmethod
+    def factory(n):
+        """
+        Factory takes number n and returns n new genes.
+        Each gene i is named according to the template "Gene %d" % (i,)
+        Genes are created in bulk.
+        """
+        genes = []
+        for i in range(n):
+            genes.append(Gene(name="Gene %d" % (i,)))
+        Gene.objects.bulk_create(genes)
+        return genes
+
+    @staticmethod
+    def get_by_name(names):
+        if isinstance(names, list):
+            genes = []
+            for name in names:
+                if not isinstance(name, str):
+                    raise TypeError("Input must be of type string or "+
+                            "list of strings.")
+                try:
+                    gene = Gene.objects.get(name=name)
+                except Gene.DoesNotExist:
+                    raise KeyError("Key [%s] is not a known Gene" % (name))
+                else:
+                    genes.append(gene)
+            return genes
+        elif isinstance(names, str):
+            try:
+                gene = Gene.objects.get(name=names)
+            except Gene.DoesNotExist:
+                raise KeyError("Key [%s] is not a known Gene" % (names))
+            else:
+                return gene
+        else:
+            raise TypeError("Input must be of type string or list of strings.")
+
     def __str__(self):
         return self.__repr__();
 
@@ -17,6 +55,45 @@ class Chromosome(models.Model):
             related_name='chromosomes')
     age = models.PositiveIntegerField(default=0)
     parents = models.ManyToManyField('self', related_name='children')
+
+    @staticmethod
+    def factory(genes, parents=[]):
+        chromosome = Chromosome.objects.create(age=0)
+        for index, gene in enumerate(genes):
+            ChromosomeMembership.objects.create(
+                    gene = gene,
+                    chromosome = chromosome,
+                    index = index
+            )
+        for parent in parents:
+            chromosome.parents.add(parent)
+        chromosome.save()
+        return chromosome
+
+    def __len__(self):
+        return self.genes.all().count()
+
+    def __getitem__(self, key):
+        if isinstance(key, int):
+            try:
+                gene = self.genes.get(chromosomemembership__index=key)
+            except Gene.DoesNotExist:
+                raise KeyError("There is no gene at index %d." % (index,))
+            else:
+                return gene
+        elif isinstance(key, slice):
+            genes = []
+            # Generata all possible indices
+            indices = range(len(self))
+            # Loop through a slice of the indices
+            for index in indices[key]:
+                genes.append(self[index])
+            return genes
+        else:
+            raise TypeError("Key should be an integer")
+
+    def __iter__(self):
+        return self.genes.order_by("chromosomemembership__index").iterator()
 
     def swap_genes(self, gene1, gene2):
         """
@@ -96,14 +173,6 @@ class Chromosome(models.Model):
                 index = index
         )
         return True
-
-    def get_gene_by_index(self, index):
-        try:
-            gene = self.genes.get(chromosomemembership__index=index)
-        except Gene.DoesNotExist:
-            return False
-        else:
-            return gene
 
     def delete_gene(self, gene, shift=True):
         """
