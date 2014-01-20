@@ -1,17 +1,19 @@
 from django.db import models
+from random import random
 
 class Gene(models.Model):
     name = models.CharField(max_length=255)
+    apriori_value = models.IntegerField(default=0)
 
     @staticmethod
-    def factory(n):
+    def factory(num):
         """
-        Factory takes number n and returns n new genes.
+        Factory takes number num and returns num new genes.
         Each gene i is named according to the template "Gene %d" % (i,)
         Genes are created in bulk.
         """
         genes = []
-        for i in range(n):
+        for i in range(num):
             genes.append(Gene(name="Gene %d" % (i,)))
         Gene.objects.bulk_create(genes)
         return genes
@@ -42,10 +44,10 @@ class Gene(models.Model):
             raise TypeError("Input must be of type string or list of strings.")
 
     def __str__(self):
-        return self.__repr__();
+        return self.__repr__()
 
     def __unicode__(self):
-        return self.__repr__();
+        return self.__repr__()
 
     def __repr__(self):
         return "<Gene:\"%s\">" % (self.name,)
@@ -57,7 +59,9 @@ class Chromosome(models.Model):
     parents = models.ManyToManyField('self', related_name='children')
 
     @staticmethod
-    def factory(genes, parents=[]):
+    def factory(genes, parents=None):
+        # Set default value for parents, if not provided.
+        parents = [] if parents is None else parents
         chromosome = Chromosome.objects.create(age=0)
         for index, gene in enumerate(genes):
             ChromosomeMembership.objects.create(
@@ -78,7 +82,7 @@ class Chromosome(models.Model):
             try:
                 gene = self.genes.get(chromosomemembership__index=key)
             except Gene.DoesNotExist:
-                raise KeyError("There is no gene at index %d." % (index,))
+                raise KeyError("There is no gene at index %d." % (key,))
             else:
                 return gene
         elif isinstance(key, slice):
@@ -105,9 +109,9 @@ class Chromosome(models.Model):
         # Fetch memberships of gene1 and gene2
         try:
             gene1_mem = ChromosomeMembership.objects.get(
-                    chromosome=self, gene=gene1);
+                    chromosome=self, gene=gene1)
             gene2_mem = ChromosomeMembership.objects.get(
-                    chromosome=self, gene=gene2);
+                    chromosome=self, gene=gene2)
         except ChromosomeMembership.DoesNotExist:
             return False
         # Swap index propery of gene1 and gene2 with XOR swap algorithm
@@ -220,10 +224,10 @@ class Chromosome(models.Model):
         self.__copy__(self)
 
     def __str__(self):
-        return self.__repr__();
+        return self.__repr__()
 
     def __unicode__(self):
-        return self.__repr__();
+        return self.__repr__()
 
     def __repr__(self):
         return str([str(gene) for gene in
@@ -232,11 +236,38 @@ class Chromosome(models.Model):
 class ChromosomeMembership(models.Model):
     gene = models.ForeignKey('Gene')
     chromosome = models.ForeignKey('Chromosome')
-    index = models.PositiveIntegerField();
+    index = models.PositiveIntegerField()
 
 class Generation(models.Model):
     chromosomes = models.ManyToManyField('Chromosome',
             through='GenerationMembership')
+
+    @staticmethod
+    def factory(chromosomes):
+        generation = Generation.objects.create()
+        for chromosome in chromosomes:
+            GenerationMembership.objects.create(
+                    chromosome=chromosome,
+                    generation=generation
+            )
+        return generation
+
+    def select_worst_chromosome(self):
+        return (self.chromosomes.values('chromosome')
+                .aggregate(models.Min('fitness')))
+
+    def select_best_chromosome(self):
+        return (self.chromosomes.values('chromosome')
+                .aggregate(models.Max('fitness')))
+
+    def delete_chromosome(self, chromosome):
+        try:
+            mem = GenerationMembership.objects.get(chromosome=chromosome,
+                    generation=self)
+        except GenerationMembership.DoesNotExist:
+            raise ValueError("Unknown chromosome in this generation.")
+        else:
+            mem.delete()
 
 class GenerationMembership(models.Model):
     chromosome = models.ForeignKey('Chromosome')
@@ -245,3 +276,59 @@ class GenerationMembership(models.Model):
 
 class Population(models.Model):
     generations = models.ManyToManyField('Generation')
+
+    @staticmethod
+    def factory(chromosomes):
+        """
+        Factory that takes a list of chromosomes (chromosomes) as input and
+        returns a population with a first generation that contains these
+        chromosomes.
+        """
+        population = Population.objects.create()
+        generation = Generation.factory(chromosomes)
+        population.generations.add(generation)
+        return population
+
+    def immigrate(self, immigrants):
+        """
+        Immigrate one of several immigrants into the population
+        by replacing the worst chromosome. Selection is done on a wheel
+        where the fitness score of an chromosome determines the surface.
+        Arguments:
+        immigrants - List of dictionaries,
+                       containing the keys "fitness" and "chromosome"
+        """
+        # Determine sum fitness, for normalizing
+        fitness_sum = sum([immigrant.fitness for immigrant in immigrants])
+        # Sum must be a nonzero and positive number
+        if not fitness_sum > 0:
+            raise ValueError("Sum fitness of immigrants should be above zero.")
+        # Wheel pin
+        pin = random()
+        # Wheel turn
+        turn = 0
+        # Wheel section picked
+        pick = None
+        for immigrant in immigrants:
+            if turn >= pin:
+                pick = immigrant
+                break
+            else:
+                turn += float(immigrant.fitness)/fitness_sum
+        # Select current generation
+        generation = self.generations.latest('pk')
+        # Select worst chromosome in that generation
+        worst_chromosome = generation.select_worst_chromosome()
+        # Remove the worst chromosome from the generation
+        generation.delete_chromosome(worst_chromosome)
+        # Immigrate the picked immigrant
+        generation.add_chromosome(pick)
+
+    def migrate(self):
+        """
+        Select the best chromosome to offer for migration
+        """
+        # Select current generation
+        generation = self.generations.latest('pk')
+        # Return best chromosome
+        return generation.select_best_chromosome()
