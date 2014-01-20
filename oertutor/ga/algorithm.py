@@ -99,6 +99,26 @@ def mutate_swap(chromosome):
     mutation.parents.add(chromosome)
     return mutation
 
+def mutate_add(chromosome):
+    """
+    Perform an add mutation to the chromosome by adding a new gene to the
+    chromosome from the pool. Genes in the chromosome are unique.
+    """
+    # Collect the primary keys of the genes already present
+    exclude = [gene.pk for gene in chromosome]
+    try:
+        # Select a random gene that is not already present
+        gene = Gene.random_choice(exclude)
+    except ValueError as e:
+        raise e
+    else:
+        # Copy chromosome to later mutate it
+        mutation = copy(chromosome)
+        # Add randomly selected gene to the chromosome
+        # Note: the append check need not be performed in this case
+        mutation.append_gene(gene, False)
+        return mutation
+
 def one_point_crossover(parent1, parent2):
     """
     Perform a one point crossover operation for two parents that could differ
