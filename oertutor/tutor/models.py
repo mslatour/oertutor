@@ -1,5 +1,5 @@
 from django.db import models
-from oertutor.rl.models import Action
+from oertutor.ga.models import Gene
 
 class Student(models.Model):
     first_name = models.CharField(max_length=30)
@@ -16,13 +16,9 @@ class KnowledgeComponent(models.Model):
     antecedents = models.ManyToManyField('self', null=True,
             symmetrical=False, related_name='consequent')
 
-class TutorMove(Action):
-    title = models.CharField(max_length=50)
-
-class Resource(Action):
+class Resource(Gene):
     title = models.CharField(max_length=50)
     source = models.URLField()
-    tm = models.ForeignKey(TutorMove, related_name='resources')
     kc = models.ForeignKey(KnowledgeComponent, related_name='resources')
 
 class Exercise(Resource):
