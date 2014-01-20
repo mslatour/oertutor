@@ -299,11 +299,10 @@ class Population(models.Model):
         # Wheel section picked
         pick = None
         for immigrant in immigrants:
+            turn += float(immigrant.fitness)/fitness_sum
             if turn >= pin:
                 pick = immigrant
                 break
-            else:
-                turn += float(immigrant.fitness)/fitness_sum
         # Select current generation
         generation = self.generations.latest('pk')
         # Select worst chromosome in that generation

@@ -49,11 +49,10 @@ def init_population(num, cls=Gene):
                 # Wheel section picked
                 pick = None
                 for gene in genes:
+                    turn += float(gene.apriori_value)/apriori_sum
                     if turn >= pin:
                         pick = gene
                         break
-                    else:
-                        turn += float(gene.apriori_value)/apriori_sum
                 # Append a chromosome with the sampled gene
                 chromosomes.append(Chromosome.factory([pick]))
         else:
