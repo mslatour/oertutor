@@ -18,6 +18,19 @@ class Gene(models.Model):
 
     @staticmethod
     def get_by_pks(pks):
+        """
+        Retrieve a list of genes by their primary keys.
+
+        Arguments:
+          pks - List of primary keys
+
+        Raises:
+          KeyError if one of the primary keys doesn't refer to a gene
+          TypeError if the input is not a list of values
+
+        Returns:
+          A list of gene instances
+        """
         if isinstance(pks, list):
             genes = []
             for pk in pks:
@@ -30,6 +43,30 @@ class Gene(models.Model):
             return genes
         else:
             raise TypeError("Input must be a list of primary keys.")
+
+    @staticmethod
+    def random_choice(exclude=None):
+        """
+        Select a random Gene instance.
+        Possibly after excluding a list of genes by their primary keys.
+
+        Arguments:
+          exclude - List of primary keys. Default: None.
+
+        Raises:
+          ValueError if there are no genes, or all genes are excluded.
+
+        Returns:
+          A randomly selected gene instance
+        """
+        if exclude is not None:
+            genes = Gene.objects.exclude(pk__in=exclude)
+        else:
+            genes = Gene.objects.all()
+        # There must be genes left to choose
+        if len(genes) == 0:
+            raise ValueError("No genes left to choose from.")
+        return random.choice(genes);
 
     def __str__(self):
         return self.__repr__()
