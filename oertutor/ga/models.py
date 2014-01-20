@@ -2,46 +2,34 @@ from django.db import models
 from random import random
 
 class Gene(models.Model):
-    name = models.CharField(max_length=255)
     apriori_value = models.IntegerField(default=0)
 
     @staticmethod
     def factory(num):
         """
         Factory takes number num and returns num new genes.
-        Each gene i is named according to the template "Gene %d" % (i,)
         Genes are created in bulk.
         """
         genes = []
         for i in range(num):
-            genes.append(Gene(name="Gene %d" % (i,)))
+            genes.append(Gene())
         Gene.objects.bulk_create(genes)
         return genes
 
     @staticmethod
-    def get_by_name(names):
-        if isinstance(names, list):
+    def get_by_pks(pks):
+        if isinstance(pks, list):
             genes = []
-            for name in names:
-                if not isinstance(name, str):
-                    raise TypeError("Input must be of type string or "+
-                            "list of strings.")
+            for pk in pks:
                 try:
-                    gene = Gene.objects.get(name=name)
+                    gene = Gene.objects.get(pk=pk)
                 except Gene.DoesNotExist:
-                    raise KeyError("Key [%s] is not a known Gene" % (name))
+                    raise KeyError("Gene(%s) is not a known Gene" % pk)
                 else:
                     genes.append(gene)
             return genes
-        elif isinstance(names, str):
-            try:
-                gene = Gene.objects.get(name=names)
-            except Gene.DoesNotExist:
-                raise KeyError("Key [%s] is not a known Gene" % (names))
-            else:
-                return gene
         else:
-            raise TypeError("Input must be of type string or list of strings.")
+            raise TypeError("Input must be a list of primary keys.")
 
     def __str__(self):
         return self.__repr__()
@@ -50,7 +38,7 @@ class Gene(models.Model):
         return self.__repr__()
 
     def __repr__(self):
-        return "<Gene:\"%s\">" % (self.name,)
+        return "<%s: %s>" % (self.__class__.__name__, self.pk)
 
 class Chromosome(models.Model):
     genes = models.ManyToManyField('Gene', through='ChromosomeMembership',
@@ -272,7 +260,7 @@ class Generation(models.Model):
 class GenerationMembership(models.Model):
     chromosome = models.ForeignKey('Chromosome')
     generation = models.ForeignKey('Generation')
-    fitness = models.DecimalField(max_digits=10, decimal_places=9)
+    fitness = models.DecimalField(null=True, max_digits=10, decimal_places=9)
 
 class Population(models.Model):
     generations = models.ManyToManyField('Generation')
@@ -299,7 +287,8 @@ class Population(models.Model):
                        containing the keys "fitness" and "chromosome"
         """
         # Determine sum fitness, for normalizing
-        fitness_sum = sum([immigrant.fitness for immigrant in immigrants])
+        fitness_sum = sum([immigrant.fitness if immigrant is not None else 0 \
+                for immigrant in immigrants])
         # Sum must be a nonzero and positive number
         if not fitness_sum > 0:
             raise ValueError("Sum fitness of immigrants should be above zero.")
