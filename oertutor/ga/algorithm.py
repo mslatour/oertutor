@@ -62,7 +62,11 @@ def init_population(num, cls=Gene):
     return Population.factory(chromosomes)
 
 def mutate(chromosome):
-    return mutate_swap(chromosome)
+    functions = []
+    if len(chromosome) > 1:
+        functions.append(mutate_swap)
+    functions.append(mutate_add)
+    return random.choice(functions)(chromosome)
 
 def mutate_swap(chromosome):
     """
@@ -118,6 +122,25 @@ def mutate_add(chromosome):
         # Note: the append check need not be performed in this case
         mutation.append_gene(gene, False)
         return mutation
+
+def crossover(parent1, parent2):
+    """
+    Crossover wrapper function that picks the crossover operation.
+    """
+    if len(parent1) > 1 and len(parent2) > 1:
+        return one_point_crossover(parent1, parent2)
+    else:
+        # Retrieve genes from parents
+        genes1 = list(parent1)
+        genes2 = list(parent2)
+        if genes1 != genes2:
+            # Create children
+            child1 = Chromosome.factory(genes1+genes2, [parent1, parent2])
+            child2 = Chromosome.factory(genes2+genes1, [parent1, parent2])
+        else:
+            child1 = copy(parent1)
+            child2 = copy(parent2)
+        return (child1, child2)
 
 def one_point_crossover(parent1, parent2):
     """

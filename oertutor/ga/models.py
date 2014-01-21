@@ -1,5 +1,7 @@
 from django.db import models
-from random import random
+from datetime import datetime
+from oertutor.ga.utils import pdf_sample
+import random
 
 class Gene(models.Model):
     apriori_value = models.IntegerField(default=0)
@@ -8,21 +10,19 @@ class Gene(models.Model):
     def factory(num):
         """
         Factory takes number num and returns num new genes.
-        Genes are created in bulk.
         """
         genes = []
-        for i in range(num):
-            genes.append(Gene())
-        Gene.objects.bulk_create(genes)
+        for _ in range(num):
+            genes.append(Gene.objects.create())
         return genes
 
     @staticmethod
-    def get_by_pks(pks):
+    def get_by_pks(primary_keys):
         """
         Retrieve a list of genes by their primary keys.
 
         Arguments:
-          pks - List of primary keys
+          primary_keys - List of primary keys
 
         Raises:
           KeyError if one of the primary keys doesn't refer to a gene
@@ -31,13 +31,13 @@ class Gene(models.Model):
         Returns:
           A list of gene instances
         """
-        if isinstance(pks, list):
+        if isinstance(primary_keys, list):
             genes = []
-            for pk in pks:
+            for primary_key in primary_keys:
                 try:
-                    gene = Gene.objects.get(pk=pk)
+                    gene = Gene.objects.get(pk=primary_key)
                 except Gene.DoesNotExist:
-                    raise KeyError("Gene(%s) is not a known Gene" % pk)
+                    raise KeyError("Gene(%s) is not a known Gene" % primary_key)
                 else:
                     genes.append(gene)
             return genes
@@ -66,7 +66,7 @@ class Gene(models.Model):
         # There must be genes left to choose
         if len(genes) == 0:
             raise ValueError("No genes left to choose from.")
-        return random.choice(genes);
+        return random.choice(genes)
 
     def __str__(self):
         return self.__repr__()
@@ -85,17 +85,29 @@ class Chromosome(models.Model):
 
     @staticmethod
     def factory(genes, parents=None):
-        # Set default value for parents, if not provided.
-        parents = [] if parents is None else parents
+        """
+        Factory takes a list of genes as input and returns a chromosome
+        instance that contains the provided genes. The genes are stored in the
+        chromosome in the order of the provided list. Optionally a list of
+        parents can be provided that will be linked to the new chromosome. The
+        relationships between the genes and the chromosome are created in bulk.
+
+        Arguments:
+          genes - A list of genes
+          parents - A list of parent chromosomes. Default: None.
+
+        Returns:
+          The created chromosome.
+        """
         chromosome = Chromosome.objects.create(age=0)
         for index, gene in enumerate(genes):
             ChromosomeMembership.objects.create(
                     gene = gene,
                     chromosome = chromosome,
-                    index = index
-            )
-        for parent in parents:
-            chromosome.parents.add(parent)
+                    index = index)
+        if parents is not None:
+            for parent in parents:
+                chromosome.parents.add(parent)
         chromosome.save()
         return chromosome
 
@@ -112,7 +124,7 @@ class Chromosome(models.Model):
                 return gene
         elif isinstance(key, slice):
             genes = []
-            # Generata all possible indices
+            # Generate all possible indices
             indices = range(len(self))
             # Loop through a slice of the indices
             for index in indices[key]:
@@ -246,7 +258,7 @@ class Chromosome(models.Model):
         return copy
 
     def __deepcopy__(self):
-        self.__copy__(self)
+        return self.__copy__()
 
     def __str__(self):
         return self.__repr__()
@@ -255,8 +267,8 @@ class Chromosome(models.Model):
         return self.__repr__()
 
     def __repr__(self):
-        return str([str(gene) for gene in
-            self.genes.order_by("chromosomemembership__index")])
+        return "%d::%s" % (self.pk, str([str(gene) for gene in
+            self.genes.order_by("chromosomemembership__index")]))
 
 class ChromosomeMembership(models.Model):
     gene = models.ForeignKey('Gene')
@@ -269,35 +281,212 @@ class Generation(models.Model):
 
     @staticmethod
     def factory(chromosomes):
+        """
+        Factory takes a list of chromosomes as input and returns a generation
+        containing those chromosomes.
+
+        Arguments:
+          chromosomes - List of chromosomes
+
+        Returns:
+          The created generation
+        """
         generation = Generation.objects.create()
         for chromosome in chromosomes:
             GenerationMembership.objects.create(
                     chromosome=chromosome,
-                    generation=generation
-            )
+                    generation=generation)
         return generation
 
-    def select_worst_chromosome(self):
-        return (self.chromosomes.values('chromosome')
-                .aggregate(models.Min('fitness')))
+    def add_chromosomes(self, chromosomes):
+        """
+        Add a list of chromosomes to this generation.
 
-    def select_best_chromosome(self):
-        return (self.chromosomes.values('chromosome')
-                .aggregate(models.Max('fitness')))
+        Arguments
+          chromosomes - A list of chromosomes
+        """
+        for chromosome in chromosomes:
+            GenerationMembership.objects.create(
+                    chromosome=chromosome,
+                    generation=self)
 
     def delete_chromosome(self, chromosome):
+        """
+        Delete a chromosome from the generation.
+
+        Arguments:
+          chromosome - The chromosome to be deleted.
+
+        Raises:
+          KeyError if the chromosome is not part of the generation.
+        """
         try:
             mem = GenerationMembership.objects.get(chromosome=chromosome,
                     generation=self)
         except GenerationMembership.DoesNotExist:
-            raise ValueError("Unknown chromosome in this generation.")
+            raise KeyError("Unknown chromosome in this generation.")
         else:
             mem.delete()
+
+    def select_by_fitness_pdf(self, num, exclude=None):
+        """
+        Select num chromosomes from the generation with the pdf based on the
+        fitness values of the chromosomes. Optionally a list of chromosomes can
+        be excluded from the pool beforehand by their primary keys.
+
+        Arguments:
+          num - The number of samples.
+          exclude - A list of primary keys to skip. Default: None.
+
+        Returns:
+          The list of num sampled chromosomes
+        """
+        if exclude is not None:
+            members = GenerationMembership.objects.exclude(pk__in=exclude)
+        else:
+            members = GenerationMembership.objects.all()
+        samples = pdf_sample(num, members,
+                lambda x: x.fitness if x.fitness is not None else 0)
+        return [sample.chromosome for sample in samples]
+
+    def select_worst_chromosome(self):
+        """
+        Select the chromosome in this generation with the worst fitness.
+
+        Raises:
+          KeyError is no chromosomes exist in this generation
+
+        Returns:
+          The worst chromosome of this generation
+        """
+        try:
+            mem = (GenerationMembership.objects
+                    .filter(generation=self).order_by('fitness')[0])
+        except IndexError:
+            raise KeyError('No chromosomes exists in this generation')
+        else:
+            return mem.chromosome
+
+    def select_best_chromosome(self):
+        """
+        Select the chromosome in this generation with the worst fitness.
+
+        Raises:
+          KeyError is no chromosomes exist in this generation
+
+        Returns:
+          The worst chromosome of this generation
+        """
+        try:
+            mem = (GenerationMembership.objects
+                    .filter(generation=self).latest('fitness'))
+        except GenerationMembership.DoesNotExist:
+            raise KeyError('No chromosomes exists in this generation')
+        else:
+            return mem.chromosome
+
+    def select_next_chromosome(self, honour_locks=True):
+        """
+        Select the next chromosome that has not been evaluated yet. The list is
+        not ordered, since the order in which chromosomes are evaluated doesn't
+        matter for the genetic algorithm, assuming all chromosomes need to be
+        evaluated eventuall. By default it also honours locks, meaning that
+        chromosomes that are locked will also not be chosen.
+        This can be disabled.
+
+        Arguments:
+          honour_locks - Don't pick locked chromosomes. Default: True.
+
+        Raises:
+          ValueError if no chromosome is available anymore.
+
+        Returns:
+          The next chromosome that is available.
+        """
+        # Select all chromosomes that do not have a fitness value yet
+        if honour_locks:
+            mem = GenerationMembership.objects.filter(fitness=None, locked=None)
+        else:
+            mem = GenerationMembership.objects.filter(fitness=None)
+        if len(mem) == 0:
+            raise ValueError("No chromosome available in this generation.")
+        else:
+            return mem[0].chromosome
+
+    def fitness(self, chromosome, fitness=None):
+        """
+        Set or retrieve the fitness value of a chromosome is this generation.
+
+        To get the fitness of a chromosome:
+        f = generation.fitness(chromosome)
+
+        To set the fitness of a chromosome:
+        generation.fitness(chromosome, f)
+
+        Arguments:
+          chromosome - A chromosome instance in this generation
+          fitness - The fitness value, leave empty to get. Default: None.
+
+        Returns:
+          Either the fitness value or nothing
+        """
+        try:
+            mem = GenerationMembership.objects.get(chromosome=chromosome,
+                    generation=self)
+        except GenerationMembership.DoesNotExist:
+            raise KeyError("Chromosome is not a member of this generation.")
+        else:
+            if fitness is None:
+                return mem.fitness
+            else:
+                mem.fitness = round(fitness, 9)
+                mem.save()
+
+    def lock_chromosome(self, chromosome):
+        """
+        Lock the chromosome to prevent it from being chosen twice. This could
+        happen because the chromosomes could be presented to a user before
+        evaluation can occur, this means that multiple asynchronous events
+        could attempt to use the same chromosome. Chromosomes are locked within
+        a particular generation.
+
+        Arguments:
+          chromosome - The chromosome to lock.
+        """
+        try:
+            mem = GenerationMembership.objects.get(chromosome=chromosome,
+                generation=self)
+        except GenerationMembership.DoesNotExist:
+            raise KeyError("Chromosome is not a member of this generation.")
+        else:
+            if mem.locked is not None:
+                raise ValueError("Chromosome is already locked.")
+            mem.locked = datetime.now()
+            mem.save()
+
+    def unlock_chromosome(self, chromosome):
+        """
+        Unlock the chromosome. See also `Generation.lock_chromosome'.
+
+        Arguments:
+          chromosome - The chromosome to unlock.
+        """
+        try:
+            mem = GenerationMembership.objects.get(chromosome=chromosome,
+                generation=self)
+        except GenerationMembership.DoesNotExist:
+            raise KeyError("Chromosome is not a member of this generation.")
+        else:
+            if mem.locked is None:
+                raise ValueError("Chromosome is not locked.")
+            mem.locked = None
+            mem.save()
 
 class GenerationMembership(models.Model):
     chromosome = models.ForeignKey('Chromosome')
     generation = models.ForeignKey('Generation')
     fitness = models.DecimalField(null=True, max_digits=10, decimal_places=9)
+    locked = models.DateField(null=True)
 
 class Population(models.Model):
     generations = models.ManyToManyField('Generation')
@@ -314,6 +503,32 @@ class Population(models.Model):
         population.generations.add(generation)
         return population
 
+    def current_generation(self):
+        """
+        Returns current generation by means of the primary key.
+        """
+        return self.generations.latest('pk')
+
+    def next_generation(self, chromosomes=None):
+        """
+        Move to a new generation in this population. Optionally a list of
+        chromosones can be provided as an initial set of individuals for that
+        generation.
+
+        Arguments:
+          chromosomes - A list of chromosomes to include in the generation.
+                        Default: None.
+
+        Returns:
+          The created new generation.
+        """
+        if chromosomes is None:
+            generation = Generation.factory([])
+        else:
+            generation = Generation.factory(chromosomes)
+        self.generations.add(generation)
+        return generation
+
     def immigrate(self, immigrants):
         """
         Immigrate one of several immigrants into the population
@@ -323,37 +538,23 @@ class Population(models.Model):
         immigrants - List of dictionaries,
                        containing the keys "fitness" and "chromosome"
         """
-        # Determine sum fitness, for normalizing
-        fitness_sum = sum([immigrant.fitness if immigrant is not None else 0 \
-                for immigrant in immigrants])
-        # Sum must be a nonzero and positive number
-        if not fitness_sum > 0:
-            raise ValueError("Sum fitness of immigrants should be above zero.")
-        # Wheel pin
-        pin = random()
-        # Wheel turn
-        turn = 0
-        # Wheel section picked
-        pick = None
-        for immigrant in immigrants:
-            turn += float(immigrant.fitness)/fitness_sum
-            if turn >= pin:
-                pick = immigrant
-                break
+        # Select immigrant according to the PDF based on the fitness values
+        immigrant = pdf_sample(1, immigrants,
+                lambda x: x.fitness if x.fitness is not None else 0)
         # Select current generation
-        generation = self.generations.latest('pk')
+        generation = self.current_generation()
         # Select worst chromosome in that generation
         worst_chromosome = generation.select_worst_chromosome()
         # Remove the worst chromosome from the generation
         generation.delete_chromosome(worst_chromosome)
         # Immigrate the picked immigrant
-        generation.add_chromosome(pick)
+        generation.add_chromosome(immigrant)
 
     def migrate(self):
         """
         Select the best chromosome to offer for migration
         """
         # Select current generation
-        generation = self.generations.latest('pk')
+        generation = self.current_generation()
         # Return best chromosome
         return generation.select_best_chromosome()
