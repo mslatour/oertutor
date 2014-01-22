@@ -1,5 +1,6 @@
 from copy import copy
 from oertutor.ga.models import Chromosome, Gene, Population
+from oertutor.ga.exceptions import ImpossibleException
 
 import random
 
@@ -61,12 +62,20 @@ def init_population(num, cls=Gene):
     # the sampled chromosomes.
     return Population.factory(chromosomes)
 
+def test_validity(chromosome):
+    return len(set(chromosome)) == len(chromosome)
+
 def mutate(chromosome):
-    functions = []
-    if len(chromosome) > 1:
-        functions.append(mutate_swap)
-    functions.append(mutate_add)
-    return random.choice(functions)(chromosome)
+    functions = [mutate_swap, mutate_add]
+    while functions != []:
+        fn = random.choice(functions)
+        try:
+            mutation = fn(chromosome)
+        except ImpossibleException:
+            functions.remove(fn)
+        else:
+            return mutation
+    raise ImpossibleException
 
 def mutate_swap(chromosome):
     """
@@ -80,6 +89,9 @@ def mutate_swap(chromosome):
     Arguments:
       chromosome - The chromosome to be mutated, of at least length 2.
 
+    Raises:
+      ImpossibleException if the chromosome is not long enough
+
     Returns:
       mutated chromosome (copy)
     """
@@ -87,7 +99,7 @@ def mutate_swap(chromosome):
     length = len(chromosome)
     # Make sure the chromosome has enough items to swap
     if length < 2:
-        raise ValueError("Chromosome must have length of two or more.")
+        raise ImpossibleException
     # Pick two random indexes
     i = random.randrange(length)
     j = random.randrange(length)
@@ -114,7 +126,7 @@ def mutate_add(chromosome):
         # Select a random gene that is not already present
         gene = Gene.random_choice(exclude)
     except ValueError as e:
-        raise e
+        raise ImpossibleException
     else:
         # Copy chromosome to later mutate it
         mutation = copy(chromosome)
@@ -127,20 +139,41 @@ def crossover(parent1, parent2):
     """
     Crossover wrapper function that picks the crossover operation.
     """
-    if len(parent1) > 1 and len(parent2) > 1:
-        return one_point_crossover(parent1, parent2)
-    else:
-        # Retrieve genes from parents
-        genes1 = list(parent1)
-        genes2 = list(parent2)
-        if genes1 != genes2:
-            # Create children
-            child1 = Chromosome.factory(genes1+genes2, [parent1, parent2])
-            child2 = Chromosome.factory(genes2+genes1, [parent1, parent2])
+    functions = [one_point_crossover, append_crossover]
+    for fn in functions:
+        try:
+            childs = fn(parent1, parent2)
+        except ImpossibleException:
+            continue
         else:
-            child1 = copy(parent1)
-            child2 = copy(parent2)
+            return childs
+    raise ImpossibleException
+
+def append_crossover(parent1, parent2):
+    """
+    Perform an append crossover by appending the genes of both parents in the
+    two possible ordernings. The resulting childs are checked by test_validity.
+
+    Arguments:
+      parent1 - Chromosome
+      parent2 - A different chromosome (although this is not checked)
+
+    Raises:
+      ImpossibleException if no valid chromosomes could be created
+
+    Returns:
+      A tuple of two new chromosomes
+    """
+    # Retrieve genes from parents
+    genes1 = list(parent1)
+    genes2 = list(parent2)
+    # Create children
+    child1 = Chromosome.factory(genes1+genes2, [parent1, parent2])
+    child2 = Chromosome.factory(genes2+genes1, [parent1, parent2])
+    if test_validity(child1) and test_validity(child2):
         return (child1, child2)
+    else:
+        raise ImpossibleException
 
 def one_point_crossover(parent1, parent2):
     """
@@ -152,23 +185,38 @@ def one_point_crossover(parent1, parent2):
     relative position of the parts (i.e. the first part of each child was
     the first part of one of the parents).
 
+    The implementation actually generates all possible combinations that adhere
+    to the constraints given by test_validity. A random selection is then made
+    from the list of valid candidates.
+
     Arguments:
       parent1 - Chromosome
       parent2 - A different chromosome (although this is not checked)
 
+    Raises:
+      ImpossibleException if no valid chromosomes could be created
+
     Returns:
       A tuple of two new chromosomes
     """
-    # Randomly pick crossover point for parent1
-    i = random.randrange(1, len(parent1))
-    # Randomly pick crossover point for parent2
-    j = random.randrange(1, len(parent2))
-    # Split up genes
-    genes11 = parent1[:i]
-    genes12 = parent1[i:]
-    genes21 = parent2[:j]
-    genes22 = parent2[j:]
-    # Create children
-    child1 = Chromosome.factory(genes11+genes22, [parent1, parent2])
-    child2 = Chromosome.factory(genes21+genes12, [parent1, parent2])
-    return (child1, child2)
+    candidates = []
+    for i in range(1, len(parent1)):
+        for j in range(1, len(parent2)):
+            # Split up genes
+            child1 = parent1[:i]+parent2[j:]
+            child2 = parent2[:j]+parent1[i:]
+            if test_validity(child1) and test_validity(child2):
+                candidates.append((child1, child2))
+    if candidates == []:
+        raise ImpossibleException
+    elif len(candidates) == 1:
+        # Convert lists of genes to chromosome instances
+        child1 = Chromosome.factory(candidates[0][0], [parent1, parent2])
+        child2 = Chromosome.factory(candidates[0][1], [parent1, parent2])
+        return (child1,child2)
+    else:
+        candidate = random.choice(candidates)
+        # Convert lists of genes to chromosome instances
+        child1 = Chromosome.factory(candidate[0], [parent1, parent2])
+        child2 = Chromosome.factory(candidate[1], [parent1, parent2])
+        return (child1,child2)
