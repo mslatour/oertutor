@@ -242,6 +242,13 @@ class Chromosome(models.Model):
                 other.save()
         return True
 
+    def fitness(self):
+        fitness = Decimal(0)
+        for generation in self.generations:
+            fitness += generation.fitness(self)
+        fitness /= len(self.generations)
+        return fitness
+
     def __copy__(self):
         # Create a chromosome with the same age
         copy = Chromosome.objects.create(age=self.age)
@@ -277,7 +284,7 @@ class ChromosomeMembership(models.Model):
 
 class Generation(models.Model):
     chromosomes = models.ManyToManyField('Chromosome',
-            through='GenerationMembership')
+            through='GenerationMembership', related_name='generations')
 
     @staticmethod
     def factory(chromosomes):
@@ -349,41 +356,55 @@ class Generation(models.Model):
                 lambda x: x.fitness if x.fitness is not None else 0)
         return [sample.chromosome for sample in samples]
 
-    def select_worst_chromosome(self):
+    def select_worst_chromosome(self, n=1):
         """
-        Select the chromosome in this generation with the worst fitness.
+        Selects the n chromosomes in this generation with the worse fitness.
+
+        Arguments:
+          n - The number of chromosomes to return. Default: 1.
 
         Raises:
           KeyError is no chromosomes exist in this generation
 
         Returns:
           The worst chromosome of this generation
+            or a list of the n worst chromosomes
         """
         try:
             mem = (GenerationMembership.objects
-                    .filter(generation=self).order_by('fitness')[0])
+                    .filter(generation=self).order_by('fitness')[0:n])
         except IndexError:
             raise KeyError('No chromosomes exists in this generation')
         else:
-            return mem.chromosome
+            if n == 1:
+                return mem[0].chromosome
+            else:
+                return [m.chromosome for m in mem]
 
-    def select_best_chromosome(self):
+    def select_best_chromosome(self, n=1):
         """
-        Select the chromosome in this generation with the worst fitness.
+        Selects the n chromosomes in this generation with the best fitness.
+
+        Arguments:
+          n - The number of chromosomes to return. Default: 1.
 
         Raises:
           KeyError is no chromosomes exist in this generation
 
         Returns:
-          The worst chromosome of this generation
+          The best chromosome of this generation
+            or a list of the n best chromosomes
         """
         try:
             mem = (GenerationMembership.objects
-                    .filter(generation=self).latest('fitness'))
+                    .filter(generation=self).order_by('-fitness')[0:n])
         except GenerationMembership.DoesNotExist:
             raise KeyError('No chromosomes exists in this generation')
         else:
-            return mem.chromosome
+            if n == 1:
+                return mem[0].chromosome
+            else:
+                return [m.chromosome for m in mem]
 
     def select_next_chromosome(self, honour_locks=True):
         """

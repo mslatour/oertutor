@@ -1,8 +1,21 @@
 from copy import copy
 from oertutor.ga.models import Chromosome, Gene, Population
 from oertutor.ga.exceptions import ImpossibleException
+from oertutor.ga.utils import debug, DEBUG_VALUE, DEBUG_STEP
 
 import random
+
+RATIO_ELITE = 0.2
+RATIO_SELECTION = 0.3
+RATIO_RECOMBINATION  = 0.2 # Population size * this ratio must be divisble by 2
+
+MIN_LEN = 1 # for solution
+MAX_LEN = 3 # for solution
+
+# RATIO_MUTATION is not necessary because the remaining number of spots in the
+# generation to fill after elitism, selection and recombination is used for
+# mutation. By doing it in this way we solve for any left-overs due to the fact
+# that depending on the population size, the ratios will not result in integers
 
 def init_population(num, cls=Gene):
     """
@@ -62,11 +75,45 @@ def init_population(num, cls=Gene):
     # the sampled chromosomes.
     return Population.factory(chromosomes)
 
+def switch_generations(num_pop, population, DEBUG=0x0):
+    # Fetch current generation
+    generation = population.current_generation()
+    # Elitism
+    elite = [copy(x) for x in generation.select_best_chromosome(
+        int(num_pop*RATIO_ELITE))]
+    debug("%d elite members: %s" % (len(elite), elite), DEBUG & DEBUG_VALUE)
+    # Survivor selection
+    survivors = [copy(x) for x in generation.select_by_fitness_pdf(
+        int(num_pop*RATIO_SELECTION))]
+    debug("%d survivors: %s" % (len(survivors), survivors), DEBUG & DEBUG_VALUE)
+    # New generation
+    generation = population.next_generation(elite+survivors)
+    for _ in range(int((num_pop*RATIO_SELECTION)/2)):
+        debug("Recombine", DEBUG & DEBUG_STEP)
+        # parent selection
+        parents = generation.select_by_fitness_pdf(2)
+        debug("Parents selected: %s" % (parents,), DEBUG & DEBUG_VALUE)
+        try:
+            generation.add_chromosomes(
+                crossover(parents[0], parents[1]))
+        except ImpossibleException:
+            continue
+    curr_num = generation.chromosomes.count()
+    for _ in range(num_pop - curr_num):
+        debug("Mutate", DEBUG & DEBUG_STEP)
+        # mutation
+        generation.add_chromosomes([
+                mutate(generation.select_by_fitness_pdf(1)[0])])
+    return generation
+
 def test_validity(chromosome):
-    return len(set(chromosome)) == len(chromosome)
+    return (
+        len(set(chromosome)) == len(chromosome)
+        and len(chromosome) >= MIN_LEN
+        and len(chromosome) <= MAX_LEN)
 
 def mutate(chromosome):
-    functions = [mutate_swap, mutate_add]
+    functions = [mutate_swap, mutate_add, mutate_delete]
     while functions != []:
         fn = random.choice(functions)
         try:
@@ -119,6 +166,17 @@ def mutate_add(chromosome):
     """
     Perform an add mutation to the chromosome by adding a new gene to the
     chromosome from the pool. Genes in the chromosome are unique.
+
+    Arguments:
+      chromosome - The chomosome parent to mutate
+
+    Raises:
+      ImpossibleException if no gene can be selected to add that is not already
+                          present or when the resulting mutate doesn't pass
+                          the validity test.
+
+    Returns:
+      The created mutation
     """
     # Collect the primary keys of the genes already present
     exclude = [gene.pk for gene in chromosome]
@@ -133,7 +191,35 @@ def mutate_add(chromosome):
         # Add randomly selected gene to the chromosome
         # Note: the append check need not be performed in this case
         mutation.append_gene(gene, False)
+        if test_validity(mutation):
+            return mutation
+        else:
+            raise ImpossibleException
+
+def mutate_delete(chromosome):
+    """
+    Perform a delete mutation to the chromosome by removing a random gene from
+    the chromosome.
+
+    Arguments:
+      chromosome - The chomosome parent to mutate
+
+    Raises:
+      ImpossibleException if the resulting mutate doesn't pass the validity test
+
+    Returns:
+      The created mutation
+    """
+    # Randomly select a gene from the chromosome
+    gene = random.choice(list(chromosome))
+    # Copy chromosome to later mutate it
+    mutation = copy(chromosome)
+    # Remove randomly selected gene from the chromosome
+    mutation.delete_gene(gene)
+    if test_validity(mutation):
         return mutation
+    else:
+        raise ImpossibleException
 
 def crossover(parent1, parent2):
     """
