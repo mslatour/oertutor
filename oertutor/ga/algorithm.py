@@ -1,5 +1,5 @@
 from copy import copy
-from oertutor.ga.models import Chromosome, Gene, Population
+from oertutor.ga.models import Population, Individual, Chromosome, Gene
 from oertutor.ga.exceptions import ImpossibleException
 from oertutor.ga.utils import debug, DEBUG_VALUE, DEBUG_STEP
 
@@ -20,25 +20,29 @@ MAX_LEN = 3 # for solution
 def init_population(num, cls=Gene):
     """
     Initialize a new population with a first generation. The generation
-    consists of chromosomes of length 1.
+    consists of individuals with chromosomes of length 1.
 
     Arguments:
-      num  - Number of chromosomes in each generation of the population.
+      num  - Number of individuals in each generation of the population.
       cls  - Class, the model of the genes. Default: Gene
 
     Returns:
       The created population
     """
-    chromosomes = []
+    individuals = []
+    # Mapping to lookup chromosomes by its gene member
+    chromosomes_gene_map = {}
     genes = cls.objects.all()
     n_genes = len(genes)
     # If there is enough room in the population for all the genes
     if len(genes) <= num:
         # Include each gene at least ones in the population
         for gene in genes:
-            chromosomes.append(Chromosome.factory([gene]))
+            chromosome = Chromosome.factory([gene])
+            chromosomes_gene_map[gene] = chromosome
+            individuals.append(Individual.factory(chromosome))
         # Substract the number of added genes of the total number of
-        # chromosomes to add in total for this generation.
+        # individuals to add in total for this generation.
         num -= n_genes
     # If the number of positions left to fill is bigger than zero
     if num > 0:
@@ -48,9 +52,16 @@ def init_population(num, cls=Gene):
         if apriori_sum == 0:
             # For each position in the generation left to fill
             for _ in range(num):
-                # Append a chromosome with a uniformly sampled gene
-                chromosomes.append(Chromosome.factory(
-                    [random.choice(genes)]))
+                gene = random.choice(genes)
+                # Append a individual with a chromosome containing the
+                # uniformly sampled gene, try to fetch chromosome from mapping
+                if gene in chromosomes_gene_map:
+                    individuals.append(Individual.factory(
+                        chromosomes_gene_map[gene]))
+                else:
+                    chromosome = Chromosome.factory([gene])
+                    chromosomes_gene_map[gene] = chromosome
+                    individuals.append(Individual.factory(chromosome))
         # If the sum is above zero, take sample according to the distribution
         # given by the apriori values of the genes.
         elif apriori_sum > 0:
@@ -67,20 +78,27 @@ def init_population(num, cls=Gene):
                     if turn >= pin:
                         pick = gene
                         break
-                # Append a chromosome with the sampled gene
-                chromosomes.append(Chromosome.factory([pick]))
+                # Append a individual with a chromosome containing the
+                # sampled gene, try to fetch chromosome from mapping
+                if pick in chromosomes_gene_map:
+                    individuals.append(Individual.factory(
+                        chromosomes_gene_map[pick]))
+                else:
+                    chromosome = Chromosome.factory([pick])
+                    chromosomes_gene_map[pick] = chromosome
+                    individuals.append(Individual.factory(chromosome))
         else:
             raise ValueError('Sum of gene apriori values was negative.')
     # Create and return a new population with an initial generation containing
     # the sampled chromosomes.
-    return Population.factory(chromosomes)
+    return Population.factory(individuals)
 
 def switch_generations(num_pop, population, DEBUG=0x0):
     # Fetch current generation
     generation = population.current_generation()
     # Elitism
-    elite = [copy(x) for x in generation.select_best_chromosome(
-        int(num_pop*RATIO_ELITE))]
+    elite = list(generation.select_best_individuals(
+        int(num_pop*RATIO_ELITE)))
     debug("%d elite members: %s" % (len(elite), elite), DEBUG & DEBUG_VALUE)
     # Survivor selection
     survivors = [copy(x) for x in generation.select_by_fitness_pdf(
@@ -98,7 +116,7 @@ def switch_generations(num_pop, population, DEBUG=0x0):
                 crossover(parents[0], parents[1]))
         except ImpossibleException:
             continue
-    curr_num = generation.chromosomes.count()
+    curr_num = generation.individuals.count()
     for _ in range(num_pop - curr_num):
         debug("Mutate", DEBUG & DEBUG_STEP)
         # mutation
@@ -112,15 +130,20 @@ def test_validity(chromosome):
         and len(chromosome) >= MIN_LEN
         and len(chromosome) <= MAX_LEN)
 
-def mutate(chromosome):
+def mutate(individual):
     functions = [mutate_swap, mutate_add, mutate_delete]
     while functions != []:
-        fn = random.choice(functions)
+        func = random.choice(functions)
         try:
-            mutation = fn(chromosome)
+            mutation = func(individual.chromosome)
         except ImpossibleException:
-            functions.remove(fn)
+            functions.remove(func)
         else:
+            try:
+                Chromosome.merge_lookalikes(mutation)
+            except ImpossibleException:
+                # No lookalikes found
+                pass
             return mutation
     raise ImpossibleException
 
@@ -183,7 +206,7 @@ def mutate_add(chromosome):
     try:
         # Select a random gene that is not already present
         gene = Gene.random_choice(exclude)
-    except ValueError as e:
+    except ValueError:
         raise ImpossibleException
     else:
         # Copy chromosome to later mutate it
@@ -226,12 +249,21 @@ def crossover(parent1, parent2):
     Crossover wrapper function that picks the crossover operation.
     """
     functions = [one_point_crossover, append_crossover]
-    for fn in functions:
+    for func in functions:
         try:
-            childs = fn(parent1, parent2)
+            childs = func(parent1.chromosome, parent2.chromosome)
         except ImpossibleException:
             continue
         else:
+            checked = []
+            for child in childs:
+                if child not in checked:
+                    try:
+                        checked.append(child)
+                        Chromosome.merge_lookalikes(child)
+                    except ImpossibleException:
+                        # No lookalikes found
+                        pass
             return childs
     raise ImpossibleException
 
@@ -253,10 +285,17 @@ def append_crossover(parent1, parent2):
     # Retrieve genes from parents
     genes1 = list(parent1)
     genes2 = list(parent2)
-    # Create children
-    child1 = Chromosome.factory(genes1+genes2, [parent1, parent2])
-    child2 = Chromosome.factory(genes2+genes1, [parent1, parent2])
-    if test_validity(child1) and test_validity(child2):
+    # Construct the sequences of genes for both children
+    seq1 = genes1+genes2
+    seq2 = genes2+genes1
+    if test_validity(seq1) and test_validity(seq2):
+        # Create children
+        if seq1 == seq2:
+            child1 = Chromosome.factory(seq1, [parent1, parent2])
+            child2 = child1
+        else:
+            child1 = Chromosome.factory(seq1, [parent1, parent2])
+            child2 = Chromosome.factory(seq2, [parent1, parent2])
         return (child1, child2)
     else:
         raise ImpossibleException
@@ -297,12 +336,20 @@ def one_point_crossover(parent1, parent2):
         raise ImpossibleException
     elif len(candidates) == 1:
         # Convert lists of genes to chromosome instances
-        child1 = Chromosome.factory(candidates[0][0], [parent1, parent2])
-        child2 = Chromosome.factory(candidates[0][1], [parent1, parent2])
-        return (child1,child2)
+        if candidates[0][0] == candidates[0][1]:
+            child1 = Chromosome.factory(candidates[0][0], [parent1, parent2])
+            child2 = child1
+        else:
+            child1 = Chromosome.factory(candidates[0][0], [parent1, parent2])
+            child2 = Chromosome.factory(candidates[0][1], [parent1, parent2])
+        return (child1, child2)
     else:
         candidate = random.choice(candidates)
         # Convert lists of genes to chromosome instances
-        child1 = Chromosome.factory(candidate[0], [parent1, parent2])
-        child2 = Chromosome.factory(candidate[1], [parent1, parent2])
-        return (child1,child2)
+        if candidates[0] == candidates[1]:
+            child1 = Chromosome.factory(candidate[0], [parent1, parent2])
+            child2 = child1
+        else:
+            child1 = Chromosome.factory(candidate[0], [parent1, parent2])
+            child2 = Chromosome.factory(candidate[1], [parent1, parent2])
+        return (child1, child2)
