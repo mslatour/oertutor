@@ -1,5 +1,5 @@
 from oertutor.ga.models import Population, Generation, Individual, \
-        Chromosome, Gene
+        Chromosome, Gene, Evaluation
 from oertutor.ga.algorithm import init_population, switch_generations
 from oertutor.ga.exceptions import ImpossibleException
 from oertutor.ga.utils import debug, DEBUG_VALUE, DEBUG_STEP, DEBUG_PROG
@@ -12,8 +12,9 @@ from math import factorial
 import random
 
 DEBUG = DEBUG_PROG | DEBUG_STEP
-MIN_SOL_LEN = 2
-MAX_SOL_LEN = 2
+MIN_SOL_LEN = 3
+MAX_SOL_LEN = 3
+EPISODES_FACTOR = 2
 
 def gen_solutions(num, pool, min_len=1, max_len=4):
     # Ensure that sequences are not longer than possible
@@ -44,8 +45,9 @@ def create_fitness_fn(solutions, noise):
 
 
 def clear_pool():
-    Population.objects.all().delete()
+    Evaluation.objects.all().delete()
     Generation.objects.all().delete()
+    Population.objects.all().delete()
     Individual.objects.all().delete()
     Chromosome.objects.all().delete()
     Gene.objects.all().delete()
@@ -58,7 +60,7 @@ def simulate(num_pool, noise, num_pop, num_iter, p_mutate, debug_mode=DEBUG,
     debug("Generated %d genes in the pool" % (num_pool,),
             debug_mode & DEBUG_VALUE)
     solutions = gen_solutions(1, pool, MIN_SOL_LEN, MAX_SOL_LEN)
-    debug("Generated solutions: %s" % (solutions,), debug_mode & DEBUG_VALUE)
+    debug("Generated solutions: %s" % (solutions,), debug_mode & DEBUG_PROG)
     fitness_fn = create_fitness_fn(solutions, noise)
     population = simulate_ga_loop(num_pop, num_iter, p_mutate, fitness_fn,
             debug_mode)
@@ -192,7 +194,8 @@ def simulate_ga_loop(num_pop, num_iter, p_mutate, fitness_fn, debug_mode=DEBUG):
     generation = population.current_generation()
     debug("Generation: %s" % ([x for x in generation.individuals.all()],),
             debug_mode & DEBUG_VALUE)
-    simulate_evaluate_generation(generation, fitness_fn, debug_mode)
+    simulate_evaluate_generation(generation, num_pop*EPISODES_FACTOR,
+            fitness_fn, debug_mode)
     debug("First generation evaluated", debug_mode & DEBUG_STEP)
     for i in range(num_iter-1):
         debug("Iteration %d" % (i+1,), debug_mode & DEBUG_PROG)
@@ -201,19 +204,18 @@ def simulate_ga_loop(num_pop, num_iter, p_mutate, fitness_fn, debug_mode=DEBUG):
         debug([x for x in generation.individuals.all()],
                 debug_mode & DEBUG_VALUE)
         # evaluation
-        simulate_evaluate_generation(generation, fitness_fn, debug_mode)
+        simulate_evaluate_generation(generation, num_pop*EPISODES_FACTOR,
+                fitness_fn, debug_mode)
         debug("Generation %d evaluated" % (i+1,), debug_mode & DEBUG_STEP)
     return population
 
-def simulate_evaluate_generation(generation, fitness_fn, debug_mode=DEBUG):
-    # Loop until all chromosomes are evaluated
-    for individual in generation.individuals.all():
+def simulate_evaluate_generation(generation, episodes, fitness_fn,
+        debug_mode=DEBUG):
+    for _ in range(episodes):
         try:
-            # Attempt to lock chromosome
-            individual.lock()
+            individual = generation.select_next_individual()
         except ImpossibleException:
-            # Individual is already locked, find a new one
-            continue
+            continue;
         else:
             # Evaluate the individual
             fitness = fitness_fn(individual.chromosome)
@@ -221,5 +223,3 @@ def simulate_evaluate_generation(generation, fitness_fn, debug_mode=DEBUG):
                     debug_mode & DEBUG_VALUE)
             # Store fitness
             generation.fitness(individual, fitness)
-            # Unlock individual
-            individual.unlock()

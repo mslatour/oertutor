@@ -82,8 +82,9 @@ class Gene(models.Model):#{{{
 class Chromosome(models.Model):#{{{
     genes = models.ManyToManyField('Gene', through='ChromosomeMembership',
             related_name='chromosomes')
-    age = models.PositiveIntegerField(default=0)
     parents = models.ManyToManyField('self', related_name='children')
+    fitness = models.DecimalField(null=True, max_digits=10, decimal_places=9)
+    age = models.PositiveIntegerField(default=0)
 
     @staticmethod
     def factory(genes, parents=None):
@@ -114,95 +115,65 @@ class Chromosome(models.Model):#{{{
         return chromosome
 
     @staticmethod
-    def merge_lookalikes(chromosome):
+    def merge_lookalike(chromosome):
         """
-        This method tries to find lookalikes of the provided chromosome
-        based on the gene configuration and merges them by replacing all
-        references in all tables with the provided chromosome. If no lookalies
-        can be found then an exception is raised.
+        This method tries to find a lookalike of the provided chromosome
+        based on the gene configuration and merges them both by replacing all
+        references in all tables with the provided chromosome. If no lookalike
+        can be found then an exception is raised. It is assumed that the
+        chromosome provided is not evaluated yet. If multiple lookalikes are
+        found then an exception is raised.
 
         Raises:
           ImpossibleException if there are no lookalikes.
+          ValueError if there are multiple lookalikes
         """
-        #print "START MERGE"
         # Define base query
         base_query = ChromosomeMembership.objects.exclude(
                 chromosome=chromosome)
         # Fetch gene memberships
         members = ChromosomeMembership.objects.filter(chromosome=chromosome)
+        # Shortlist container for promising candidates
+        shortlist = None
         # Fetch candidates for each gene membership
-        lookalikes = None
         for mem in members:
-            #print "Member of chromosome %s: (%s, %d)" % (chromosome, mem.gene, mem.index)
             candidates = [mem.chromosome for mem in
                     base_query.filter(gene=mem.gene, index=mem.index)]
-            if lookalikes is None:
-                #print "Set lookalikes to candidates: %s" % (candidates)
-                lookalikes = candidates
+            if shortlist is None:
+                shortlist = candidates
             else:
-                #print "Filter lookalikes"
                 # For all currently found lookalikes
-                for lookalike in list(lookalikes):
-                    #print "Lookalike of %s: %s" % (chromosome, lookalike)
+                for lookalike in list(shortlist):
                     # If they are not similar for this gene
                     if lookalike not in candidates:
-                        #print "lookalike not in candidates"
                         # Remove them from the list of lookalikes
-                        lookalikes.remove(lookalike)
-        #            else:
-                        #print "Lookalike is kept (fitness values: %s)" % (list(Evaluation.objects.filter(chromosome=lookalike).order_by('-generation')),)
+                        shortlist.remove(lookalike)
         # Make sure no supersets are kept
         length = len(members)
-        lookalikes = filter(lambda x: len(x)==length, lookalikes)
+        lookalikes = filter(lambda x: len(x)==length, shortlist)
         # If there are no lookalikes left that met every criteria
         if len(lookalikes) == 0:
-            #print "END MERGE BY RAISE"
             raise ImpossibleException('No lookalikes found.')
+        elif len(lookalikes) > 1:
+            raise ValueError("Multiple lookalikes found for %s" %
+                    (chromosome,))
         else:
-            #print "Merge %d lookalikes for %s" % (len(lookalikes), chromosome)
-            #print "Lookalikes: %s" % (lookalikes,)
-            #raw_input("Press [Enter] to continue")
-            for lookalike in lookalikes:
-                #print "Merging with %s" % (lookalike,)
-                #print "Updating individuals' chromosome"
-                #raw_input("Press [Enter] to continue")
-                # Update chromosome references in individuals
-                Individual.objects.filter(chromosome=lookalike).update(
-                        chromosome=chromosome)
-                #print "Updating evaluations' chromosome"
-                #raw_input("Press [Enter] to continue")
+            lookalike = lookalikes[0]
+            chromosome.age = lookalike.age
+            chromosome.fitness = lookalike.fitness
+            chromosome.save()
+            # Update chromosome references in individuals
+            Individual.objects.filter(chromosome=lookalike).update(
+                    chromosome=chromosome)
+            if lookalike.age > 0:
                 # Update chromosome references in evaluations
                 Evaluation.objects.filter(chromosome=lookalike).update(
                         chromosome=chromosome)
-                #print "Updating generation memberships' chromosomes"
-                #raw_input("Press [Enter] to continue")
                 # Update chromosome references in generation memberships
                 GenerationMembership.objects.filter(chromosome=lookalike).\
                         update(chromosome=chromosome)
-                #print "Delete lookalike %s" % (lookalike,)
-                #raw_input("Press [Enter] to continue")
-                # Delete lookalike which also deletes gene membership entries
-                lookalike.delete()
-            #print "Updating fitness"
-            #raw_input("Press [Enter] to continue")
-            # For all generations that contain the merged chromosome
-            for generation in set([mem.generation for mem in
-                    GenerationMembership.objects.filter(chromosome=chromosome)]):
-                #print "Generation %d" % (generation.pk,)
-                #print "Calculate aggregated fitness"
-                #raw_input("Press [Enter] to continue")
-                # Recalculate aggregated fitness of the chromosome
-                # up to (and including) this generation
-                aggregate = Evaluation.fitness(chromosome=chromosome,
-                        generation__pk__lt=generation.pk+1)
-                if aggregate is not None:
-                    #print "Aggregated fitness: %f" % (aggregate,)
-                    #print "Updating generation membership fitness"
-                    #raw_input("Press [Enter] to continue")
-                    # Update fitness values of the chromosome in this generation
-                    GenerationMembership.objects.filter(chromosome=chromosome,
-                            generation=generation).update(fitness=aggregate)
-            #print "END MERGE"
+            # Delete lookalike which also deletes gene membership entries
+            lookalike.delete()
 
     def __len__(self):
         return self.genes.all().count()
@@ -335,16 +306,9 @@ class Chromosome(models.Model):#{{{
                 other.save()
         return True
 
-    def fitness(self):
-        fitness = Decimal(0)
-        for generation in self.generations:
-            fitness += generation.fitness(self)
-        fitness /= len(self.generations)
-        return fitness
-
     def __copy__(self):
         # Create a chromosome with the same age
-        copy = Chromosome.objects.create(age=self.age)
+        copy = Chromosome.objects.create()
         # Add the same genes to the new chromosome
         for member in ChromosomeMembership.objects.filter(chromosome=self):
             ChromosomeMembership.objects.create(
@@ -399,7 +363,7 @@ class Individual(models.Model):#{{{
           The average fitness value of the related chromosome within the given
           scope.
         """
-        return Evaluation.fitness(self.chromosome, generation)
+        return Evaluation.fitness(chromosome=self.chromosome, generation=generation)
 
     def lock(self):
         """
@@ -453,8 +417,9 @@ class Individual(models.Model):#{{{
 
 class Evaluation(models.Model):#{{{
     chromosome = models.ForeignKey('Chromosome', related_name='+')
-    generation = models.ForeignKey('Generation', related_name='+')
     individual = models.ForeignKey('Individual', related_name='+')
+    generation = models.ForeignKey('Generation', related_name='+')
+    population = models.ForeignKey('Population', related_name='+')
     #TODO link to student
     value = models.DecimalField(null=True, max_digits=10, decimal_places=9)
 
@@ -465,11 +430,19 @@ class Evaluation(models.Model):#{{{
                 generation=generation,
                 individual=individual,
                 chromosome=chromosome,
+                population=generation.population,
                 value=fitness)
         # Fetch aggregated fitness of the chromosome
-        aggregate = Evaluation.fitness(chromosome=chromosome)
-        GenerationMembership.objects.filter(chromosome=chromosome,
-                generation=generation).update(fitness=aggregate)
+        aggregate = Evaluation.fitness(chromosome=chromosome,
+                population=generation.population)
+        GenerationMembership.objects.filter(
+                chromosome=chromosome,
+                generation=generation).update(
+                        fitness=aggregate,
+                        age=models.F('age')+1)
+        chromosome.age = chromosome.age + 1
+        chromosome.fitness = aggregate
+        chromosome.save()
 
     @staticmethod
     def fitness(**filters):
@@ -482,14 +455,17 @@ class GenerationMembership(models.Model):#{{{
     individual = models.ForeignKey('Individual')
     chromosome = models.ForeignKey('Chromosome')
     generation = models.ForeignKey('Generation')
-    fitness = models.DecimalField(null=True, max_digits=10, decimal_places=9)#}}}
+    fitness = models.DecimalField(null=True, max_digits=10, decimal_places=9)
+    age = models.PositiveIntegerField(default=0)
+#}}}
 
 class Generation(models.Model):#{{{
     individuals = models.ManyToManyField('Individual',
         through='GenerationMembership', related_name='+')
+    population = models.ForeignKey('Population', related_name='generations')
 
     @staticmethod
-    def factory(individuals):
+    def factory(individuals, population):
         """
         Factory takes a list of individuals as input and returns a generation
         containing those individuals.
@@ -500,7 +476,7 @@ class Generation(models.Model):#{{{
         Returns:
           The created generation
         """
-        generation = Generation.objects.create()
+        generation = Generation.objects.create(population=population)
         generation.add_individuals(individuals)
         return generation
 
@@ -526,7 +502,8 @@ class Generation(models.Model):#{{{
                     individual=individual,
                     generation=self,
                     chromosome=individual.chromosome,
-                    fitness=Evaluation.fitness(chromosome=individual.chromosome)
+                    fitness=individual.chromosome.fitness,
+                    age=individual.chromosome.age
             )
 
     def delete_individual(self, individual):
@@ -563,7 +540,9 @@ class Generation(models.Model):#{{{
         if exclude is not None:
             members = GenerationMembership.objects.exclude(pk__in=exclude)
         else:
-            members = GenerationMembership.objects.all()
+            members = GenerationMembership.objects
+        # Only look at individuals in this generation
+        members = members.filter(generation=self)
         samples = pdf_sample(num, members,
                 lambda x: x.fitness if x.fitness is not None else 0)
         return [sample.individual for sample in samples]
@@ -606,10 +585,8 @@ class Generation(models.Model):#{{{
 
     def select_next_individual(self, honour_locks=True):
         """
-        Select the next individual that has not been evaluated yet. The list is
-        not ordered, since the order in which individuals are evaluated doesn't
-        matter for the genetic algorithm, assuming all individuals need to be
-        evaluated eventually. By default it also honours locks, meaning that
+        Select the next individual using USB-1.
+        By default it also honours locks, meaning that
         individuals that are locked will also not be chosen.
         This can be disabled.
 
@@ -617,21 +594,30 @@ class Generation(models.Model):#{{{
           honour_locks - Don't pick locked individuals. Default: True.
 
         Raises:
-          ValueError if no individual is available anymore.
+          ImpossibleException if no unlocked individual is available.
 
         Returns:
-          The next individual that is available.
+          The next individual to be evaluated.
         """
         # Select all individuals that do not have a fitness value yet
-        mem = GenerationMembership.objects.exclude(
-                individual__in=Evaluation.objects.filter(generation=self))
+        members = GenerationMembership.objects.filter(generation=self)
         if honour_locks:
             # Further demand the individual to not be locked
-            mem.filter(individual__locked=None)
-        if len(mem) == 0:
-            raise ValueError("No individual available in this generation.")
+            members.filter(individual__locked=None)
+        if len(members) == 0:
+            raise ImpossibleException("No individual available in this generation.")
         else:
-            return mem[0].individual
+            # Order the individuals by the UCB value
+            try:
+                sorted_members = sorted(members, key=
+                    lambda x: (x.fitness + (1/x.age)) if x.age > 0 else 'Inf',
+                    reverse=True)
+            except Exception as e:
+                print members
+                for member in members:
+                    print member.pk, member.age, member.fitness, member.individual
+                raise e
+            return sorted_members[0].individual
 
     def fitness(self, individual, fitness=None):
         """
@@ -656,10 +642,9 @@ class Generation(models.Model):#{{{
                     individual=individual).fitness
         else:
             Evaluation.factory(self, individual, fitness)
-
+#}}}
 
 class Population(models.Model):#{{{
-    generations = models.ManyToManyField('Generation')
 
     @staticmethod
     def factory(individuals):
@@ -668,8 +653,7 @@ class Population(models.Model):#{{{
         population with a first generation that contains these individuals.
         """
         population = Population.objects.create()
-        generation = Generation.factory(individuals)
-        population.generations.add(generation)
+        generation = Generation.factory(individuals, population)
         return population
 
     def current_generation(self):
@@ -692,10 +676,9 @@ class Population(models.Model):#{{{
           The created new generation.
         """
         if individuals is None:
-            generation = Generation.factory([])
+            generation = Generation.factory([], self)
         else:
-            generation = Generation.factory(individuals)
-        self.generations.add(generation)
+            generation = Generation.factory(individuals, self)
         return generation
 
     def immigrate(self, immigrants):
@@ -726,4 +709,5 @@ class Population(models.Model):#{{{
         # Select current generation
         generation = self.current_generation()
         # Return best chromosome
-        return generation.select_best_individuals()#}}}
+        return generation.select_best_individuals()
+#}}}

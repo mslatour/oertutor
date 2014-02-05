@@ -140,7 +140,9 @@ def mutate(individual):
             functions.remove(func)
         else:
             try:
-                Chromosome.merge_lookalikes(mutation)
+                Chromosome.merge_lookalike(mutation)
+            except ValueError as err:
+                print err
             except ImpossibleException:
                 # No lookalikes found
                 pass
@@ -260,7 +262,9 @@ def crossover(parent1, parent2):
                 if child not in checked:
                     try:
                         checked.append(child)
-                        Chromosome.merge_lookalikes(child)
+                        Chromosome.merge_lookalike(child)
+                    except ValueError as err:
+                        print err
                     except ImpossibleException:
                         # No lookalikes found
                         pass
