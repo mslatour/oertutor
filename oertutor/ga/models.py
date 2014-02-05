@@ -308,7 +308,7 @@ class Chromosome(models.Model):#{{{
 
     def __copy__(self):
         # Create a chromosome with the same age
-        copy = Chromosome.objects.create()
+        copy = Chromosome.objects.create(age=self.age, fitness=self.fitness)
         # Add the same genes to the new chromosome
         for member in ChromosomeMembership.objects.filter(chromosome=self):
             ChromosomeMembership.objects.create(

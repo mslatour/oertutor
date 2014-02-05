@@ -82,6 +82,14 @@ def simulate(num_pool, noise, num_pop, num_iter, p_mutate, debug_mode=DEBUG,
                     noise,
                     num_pop,
                     num_iter))
+        debug("Exporting regret data", debug_mode & DEBUG_PROG)
+        export_regret_data(population,
+                export_dir+"/regret_%s_%d_%f_%d_%d.dat" % (datetime.now(
+                    timezone('Europe/Amsterdam')).strftime("%Y-%m-%d-%H%M"),
+                    num_pool,
+                    noise,
+                    num_pop,
+                    num_iter))
         debug("Exporting coverage data", debug_mode & DEBUG_PROG)
         export_coverage_data(population, num_pool,
                 export_dir+"/coverage_%s_%d_%f_%d_%d.dat" % (datetime.now(
@@ -101,6 +109,22 @@ def simulate(num_pool, noise, num_pop, num_iter, p_mutate, debug_mode=DEBUG,
                         num_iter))
     debug("Done", debug_mode & DEBUG_PROG)
     return population
+
+def export_regret_data(population, output=None):
+    labels = ["evaluation", "regret"]
+    if output is not None:
+        out = open(output, "w")
+        out.write(" ".join(labels)+"\n")
+    else:
+        print " ".join(labels)
+    evaluations = Evaluation.objects.filter(population=population)
+    for index, evaluation in enumerate(evaluations):
+        if output is None:
+            print "%d %f" % (index, 1-evaluation.value)
+        else:
+            out.write("%d %f\n" % (index, 1-evaluation.value))
+    if output is not None:
+        out.close()
 
 def export_chromosome_track_data(population, output=None):
     if output is not None:
@@ -215,7 +239,7 @@ def simulate_evaluate_generation(generation, episodes, fitness_fn,
         try:
             individual = generation.select_next_individual()
         except ImpossibleException:
-            continue;
+            continue
         else:
             # Evaluate the individual
             fitness = fitness_fn(individual.chromosome)

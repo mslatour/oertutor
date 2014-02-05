@@ -178,14 +178,12 @@ def mutate_swap(chromosome):
     # Ensure the two indexes are different
     while j == i:
         j = random.randrange(length)
-    # Copy chromosome to later mutate it
-    mutation = copy(chromosome)
+    # Fetch the list of genes from the chromosome
+    genes = list(chromosome)
     # Swap genes
-    mutation.swap_genes(mutation[i], mutation[j])
-    # Set parent of the mutation to the original
-    mutation.parents.clear()
-    mutation.parents.add(chromosome)
-    return mutation
+    genes[i] = chromosome[j]
+    genes[j] = chromosome[i]
+    return Chromosome.factory(genes, [chromosome])
 
 def mutate_add(chromosome):
     """
@@ -211,13 +209,12 @@ def mutate_add(chromosome):
     except ValueError:
         raise ImpossibleException
     else:
-        # Copy chromosome to later mutate it
-        mutation = copy(chromosome)
-        # Add randomly selected gene to the chromosome
-        # Note: the append check need not be performed in this case
-        mutation.append_gene(gene, False)
-        if test_validity(mutation):
-            return mutation
+        # Fetch the list of genes from the chromosome
+        genes = list(chromosome)
+        # Add randomly selected gene to the gene list
+        genes.append(gene)
+        if test_validity(genes):
+            return Chromosome.factory(genes, [chromosome])
         else:
             raise ImpossibleException
 
@@ -235,14 +232,14 @@ def mutate_delete(chromosome):
     Returns:
       The created mutation
     """
-    # Randomly select a gene from the chromosome
-    gene = random.choice(list(chromosome))
-    # Copy chromosome to later mutate it
-    mutation = copy(chromosome)
-    # Remove randomly selected gene from the chromosome
-    mutation.delete_gene(gene)
-    if test_validity(mutation):
-        return mutation
+    # Fetch the list of genes from the chromosome
+    genes = list(chromosome)
+    # Randomly select a gene from the gene list
+    gene = random.choice(genes)
+    # Remove randomly selected gene from the gene list
+    genes.remove(gene)
+    if test_validity(genes):
+        return Chromosome.factory(genes, [chromosome])
     else:
         raise ImpossibleException
 
