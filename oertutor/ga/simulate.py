@@ -14,7 +14,7 @@ import random
 DEBUG = DEBUG_PROG | DEBUG_STEP
 MIN_SOL_LEN = 3
 MAX_SOL_LEN = 3
-EPISODES_FACTOR = 2
+EPISODES_FACTOR = 1.5
 
 def gen_solutions(num, pool, min_len=1, max_len=4):
     # Ensure that sequences are not longer than possible
@@ -90,6 +90,14 @@ def simulate(num_pool, noise, num_pop, num_iter, p_mutate, debug_mode=DEBUG,
                     noise,
                     num_pop,
                     num_iter))
+        debug("Exporting cumulative regret data", debug_mode & DEBUG_PROG)
+        export_cumul_regret_data(population,
+                export_dir+"/regret_cumul_%s_%d_%f_%d_%d.dat" % (datetime.now(
+                    timezone('Europe/Amsterdam')).strftime("%Y-%m-%d-%H%M"),
+                    num_pool,
+                    noise,
+                    num_pop,
+                    num_iter))
         debug("Exporting coverage data", debug_mode & DEBUG_PROG)
         export_coverage_data(population, num_pool,
                 export_dir+"/coverage_%s_%d_%f_%d_%d.dat" % (datetime.now(
@@ -123,6 +131,24 @@ def export_regret_data(population, output=None):
             print "%d %f" % (index, 1-evaluation.value)
         else:
             out.write("%d %f\n" % (index, 1-evaluation.value))
+    if output is not None:
+        out.close()
+
+def export_cumul_regret_data(population, output=None):
+    labels = ["evaluation", "regret"]
+    if output is not None:
+        out = open(output, "w")
+        out.write(" ".join(labels)+"\n")
+    else:
+        print " ".join(labels)
+    evaluations = Evaluation.objects.filter(population=population)
+    regret = 0
+    for index, evaluation in enumerate(evaluations):
+        regret += 1-evaluation.value
+        if output is None:
+            print "%d %f" % (index, regret)
+        else:
+            out.write("%d %f\n" % (index, regret))
     if output is not None:
         out.close()
 
@@ -235,7 +261,7 @@ def simulate_ga_loop(num_pop, num_iter, p_mutate, fitness_fn, debug_mode=DEBUG):
 
 def simulate_evaluate_generation(generation, episodes, fitness_fn,
         debug_mode=DEBUG):
-    for _ in range(episodes):
+    for _ in range(int(episodes)):
         try:
             individual = generation.select_next_individual()
         except ImpossibleException:
