@@ -140,13 +140,15 @@ def mutate(individual):
             functions.remove(func)
         else:
             try:
-                Chromosome.merge_lookalike(mutation)
+                chromosome = Chromosome.get_by_genes(mutation)
+                chromosome.parents.add(individual.chromosome)
             except ValueError as err:
                 print err
             except ImpossibleException:
-                # No lookalikes found
-                pass
-            return mutation
+                # No match found
+                return Chromosome.factory(mutation, [individual.chromosome])
+            else:
+                return chromosome
     raise ImpossibleException
 
 def mutate_swap(chromosome):
@@ -183,7 +185,7 @@ def mutate_swap(chromosome):
     # Swap genes
     genes[i] = chromosome[j]
     genes[j] = chromosome[i]
-    return Chromosome.factory(genes, [chromosome])
+    return genes
 
 def mutate_add(chromosome):
     """
@@ -214,7 +216,7 @@ def mutate_add(chromosome):
         # Add randomly selected gene to the gene list
         genes.append(gene)
         if test_validity(genes):
-            return Chromosome.factory(genes, [chromosome])
+            return genes
         else:
             raise ImpossibleException
 
@@ -239,7 +241,7 @@ def mutate_delete(chromosome):
     # Remove randomly selected gene from the gene list
     genes.remove(gene)
     if test_validity(genes):
-        return Chromosome.factory(genes, [chromosome])
+        return genes
     else:
         raise ImpossibleException
 
@@ -254,18 +256,28 @@ def crossover(parent1, parent2):
         except ImpossibleException:
             continue
         else:
-            checked = []
+            chromosomes = []
+            mapped = {}
             for child in childs:
-                if child not in checked:
+                if tuple(child) not in mapped:
                     try:
-                        checked.append(child)
-                        Chromosome.merge_lookalike(child)
+                        chromosome = Chromosome.get_by_genes(child)
+                        chromosome.parents.add(parent1.chromosome)
+                        chromosome.parents.add(parent2.chromosome)
                     except ValueError as err:
                         print err
                     except ImpossibleException:
-                        # No lookalikes found
-                        pass
-            return childs
+                        # No match found
+                        chromosome = Chromosome.factory(child,
+                                [parent1.chromosome, parent2.chromosome])
+                        mapped[tuple(child)] = chromosome
+                        chromosomes.append(chromosome)
+                    else:
+                        mapped[tuple(child)] = chromosome
+                        chromosomes.append(chromosome)
+                else:
+                    chromosomes.append(mapped[tuple(child)])
+            return chromosomes
     raise ImpossibleException
 
 def append_crossover(parent1, parent2):
@@ -287,16 +299,9 @@ def append_crossover(parent1, parent2):
     genes1 = list(parent1)
     genes2 = list(parent2)
     # Construct the sequences of genes for both children
-    seq1 = genes1+genes2
-    seq2 = genes2+genes1
-    if test_validity(seq1) and test_validity(seq2):
-        # Create children
-        if seq1 == seq2:
-            child1 = Chromosome.factory(seq1, [parent1, parent2])
-            child2 = child1
-        else:
-            child1 = Chromosome.factory(seq1, [parent1, parent2])
-            child2 = Chromosome.factory(seq2, [parent1, parent2])
+    child1 = genes1+genes2
+    child2 = genes2+genes1
+    if test_validity(child1) and test_validity(child2):
         return (child1, child2)
     else:
         raise ImpossibleException
@@ -337,20 +342,7 @@ def one_point_crossover(parent1, parent2):
         raise ImpossibleException
     elif len(candidates) == 1:
         # Convert lists of genes to chromosome instances
-        if candidates[0][0] == candidates[0][1]:
-            child1 = Chromosome.factory(candidates[0][0], [parent1, parent2])
-            child2 = child1
-        else:
-            child1 = Chromosome.factory(candidates[0][0], [parent1, parent2])
-            child2 = Chromosome.factory(candidates[0][1], [parent1, parent2])
-        return (child1, child2)
+        return (candidates[0][0], candidates[0][1])
     else:
         candidate = random.choice(candidates)
-        # Convert lists of genes to chromosome instances
-        if candidates[0] == candidates[1]:
-            child1 = Chromosome.factory(candidate[0], [parent1, parent2])
-            child2 = child1
-        else:
-            child1 = Chromosome.factory(candidate[0], [parent1, parent2])
-            child2 = Chromosome.factory(candidate[1], [parent1, parent2])
-        return (child1, child2)
+        return (candidate[0], candidate[1])

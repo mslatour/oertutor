@@ -115,6 +115,49 @@ class Chromosome(models.Model):#{{{
         return chromosome
 
     @staticmethod
+    def get_by_genes(genes):
+        """
+        Lookup the chromosome instance that has the given list of genes. In
+        order to be a match, a chromosome need to have the exact same genes on
+        the same locations and no additional genes.
+
+        Raises:
+          ImpossibleException if no chromosome could be matched
+
+        Returns:
+          The matched chromosome
+        """
+        # Define base query
+        base_query = ChromosomeMembership.objects
+        # Shortlist container for promising candidates
+        shortlist = None
+        # Fetch candidates for each gene membership
+        for index, gene in enumerate(genes):
+            candidates = [mem.chromosome for mem in
+                    base_query.filter(gene=gene, index=index)]
+            if shortlist is None:
+                shortlist = candidates
+            else:
+                # For all currently found lookalikes
+                for lookalike in list(shortlist):
+                    # If they are not similar for this gene
+                    if lookalike not in candidates:
+                        # Remove them from the list of lookalikes
+                        shortlist.remove(lookalike)
+        # Make sure no supersets are kept
+        length = len(genes)
+        shortlist = filter(lambda x: len(x)==length, shortlist)
+        #TODO: ensure that the chromosomes exist in this population
+        # If there are no lookalikes left that met every criteria
+        if len(shortlist) == 0:
+            raise ImpossibleException('No matches found.')
+        elif len(shortlist) > 1:
+            raise ValueError("Multiple matches found for %s" %
+                    (genes,))
+        else:
+            return shortlist[0]
+
+    @staticmethod
     def merge_lookalike(chromosome):
         """
         This method tries to find a lookalike of the provided chromosome
