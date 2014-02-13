@@ -9,6 +9,8 @@ from pytz import timezone
 DEBUG_PROG = 0x1
 DEBUG_STEP = 0x2
 DEBUG_VALUE = 0x4
+DEBUG_SUITE = 0x8
+DEBUG_ALL = DEBUG_PROG | DEBUG_STEP | DEBUG_VALUE | DEBUG_SUITE
 
 def debug(message, show):
     if show:
