@@ -93,36 +93,49 @@ def init_population(num, cls=Gene):
     # the sampled chromosomes.
     return Population.factory(individuals)
 
-def switch_generations(num_pop, population, DEBUG=0x0):
+def switch_generations(num_pop, num_elite, p_mutate, population, DEBUG=0x0):
     # Fetch current generation
     generation = population.current_generation()
     # Elitism
-    elite = list(generation.select_best_individuals(
-        int(num_pop*RATIO_ELITE)))
+    elite = list(generation.select_best_individuals(num_elite))
     debug("%d elite members: %s" % (len(elite), elite), DEBUG & DEBUG_VALUE)
+    num_elites = len(elite)
+    if num_elites >= num_pop:
+        return population.next_generation(elite[:num_pop])
+
     # Survivor selection
     survivors = [copy(x) for x in generation.select_by_fitness_pdf(
-        int(num_pop*RATIO_SELECTION))]
+        num_pop-num_elites)]
     debug("%d survivors: %s" % (len(survivors), survivors), DEBUG & DEBUG_VALUE)
-    # New generation
-    generation = population.next_generation(elite+survivors)
-    for _ in range(int((num_pop*RATIO_SELECTION)/2)):
-        debug("Recombine", DEBUG & DEBUG_STEP)
-        # parent selection
-        parents = generation.select_by_fitness_pdf(2)
+
+    offspring = []
+    # From the intermediate generation to the new generation
+    for index in range(len(survivors)/2):
+        parents = survivors[2*index:2*(index+1)]
         debug("Parents selected: %s" % (parents,), DEBUG & DEBUG_VALUE)
         try:
-            generation.add_chromosomes(
-                crossover(parents[0], parents[1]))
+            offspring += crossover(parents[0].chromosome, parents[1].chromosome)
         except ImpossibleException:
-            continue
-    curr_num = generation.individuals.count()
-    for _ in range(num_pop - curr_num):
-        debug("Mutate", DEBUG & DEBUG_STEP)
-        # mutation
-        generation.add_chromosomes([
-                mutate(generation.select_by_fitness_pdf(1)[0])])
-    return generation
+            # If no children can be created, just keep the parents
+            offspring += [p.chromosome for p in parents]
+
+    # Add any individuals that have not mated as their own offspring, this will
+    # happen when the number of survivors is an odd number
+    offspring += survivors[len(offspring):]
+
+    nxt_generation = elite
+    for member in offspring:
+        if random.random() >= p_mutate:
+            try:
+                nxt_generation.append(Individual.factory(mutate(member)))
+                debug("Mutate %s" % (member,), DEBUG & DEBUG_STEP)
+            except ImpossibleException:
+                nxt_generation.append(Individual.factory(member))
+        else:
+            nxt_generation.append(Individual.factory(member))
+
+    # New generation
+    return population.next_generation(nxt_generation[:num_pop])
 
 def test_validity(chromosome):
     return (
@@ -130,23 +143,23 @@ def test_validity(chromosome):
         and len(chromosome) >= MIN_LEN
         and len(chromosome) <= MAX_LEN)
 
-def mutate(individual):
+def mutate(chromosome):
     functions = [mutate_swap, mutate_add, mutate_delete]
     while functions != []:
         func = random.choice(functions)
         try:
-            mutation = func(individual.chromosome)
+            mutation = func(chromosome)
         except ImpossibleException:
             functions.remove(func)
         else:
             try:
                 chromosome = Chromosome.get_by_genes(mutation)
-                chromosome.parents.add(individual.chromosome)
+                chromosome.parents.add(chromosome)
             except ValueError as err:
                 print err
             except ImpossibleException:
                 # No match found
-                return Chromosome.factory(mutation, [individual.chromosome])
+                return Chromosome.factory(mutation, [chromosome])
             else:
                 return chromosome
     raise ImpossibleException
@@ -252,7 +265,7 @@ def crossover(parent1, parent2):
     functions = [one_point_crossover, append_crossover]
     for func in functions:
         try:
-            childs = func(parent1.chromosome, parent2.chromosome)
+            childs = func(parent1, parent2)
         except ImpossibleException:
             continue
         else:
@@ -262,14 +275,14 @@ def crossover(parent1, parent2):
                 if tuple(child) not in mapped:
                     try:
                         chromosome = Chromosome.get_by_genes(child)
-                        chromosome.parents.add(parent1.chromosome)
-                        chromosome.parents.add(parent2.chromosome)
+                        chromosome.parents.add(parent1)
+                        chromosome.parents.add(parent2)
                     except ValueError as err:
                         print err
                     except ImpossibleException:
                         # No match found
                         chromosome = Chromosome.factory(child,
-                                [parent1.chromosome, parent2.chromosome])
+                                [parent1, parent2])
                         mapped[tuple(child)] = chromosome
                         chromosomes.append(chromosome)
                     else:

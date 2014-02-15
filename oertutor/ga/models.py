@@ -708,7 +708,7 @@ class Population(models.Model):#{{{
     def next_generation(self, individuals=None):
         """
         Move to a new generation in this population. Optionally a list of
-        chromosones can be provided as an initial set of individuals for that
+        individuals can be provided as an initial set of individuals for that
         generation.
 
         Arguments:

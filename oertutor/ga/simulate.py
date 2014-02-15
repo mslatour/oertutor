@@ -328,8 +328,8 @@ class SimulationSuite:
             debug("Entering %s" % (environment,), debug_mode & DEBUG_SUITE)
             for simulation in self.setups:
                 for repetition in range(repetitions):
-                    debug("Running %s [Repetition %d]" % (simulation,repetition),
-                            debug_mode & DEBUG_SUITE)
+                    debug("Running %s [Repetition %d]" %
+                            (simulation, repetition), debug_mode & DEBUG_SUITE)
                     population = self.simulation_fn(
                             debug_mode = debug_mode,
                             fitness_fn = self.environments[environment].fitness,
@@ -417,7 +417,7 @@ def clear(clear_genes=False):
     if clear_genes:
         Gene.objects.all().delete()
 
-def simulate( num_pool, noise, num_pop, num_iter,
+def simulate( num_pool, noise, num_pop, num_iter, num_elite, p_mutate,
               episodes_factor, debug_mode=DEBUG, export_dir=None):
     debug("Start", debug_mode & DEBUG_PROG)
     clear(True)
@@ -427,8 +427,8 @@ def simulate( num_pool, noise, num_pop, num_iter,
     solutions = gen_solutions(1, pool, MIN_SOL_LEN, MAX_SOL_LEN)
     debug("Generated solutions: %s" % (solutions,), debug_mode & DEBUG_PROG)
     fitness_fn = create_fitness_fn(solutions, noise)
-    population = simulate_ga_loop(num_pop, num_iter, fitness_fn,
-            episodes_factor, debug_mode)
+    population = simulate_ga_loop(num_pop, num_iter, num_elite, p_mutate,
+            fitness_fn, episodes_factor, debug_mode)
     debug("Stop", debug_mode & DEBUG_PROG)
     if export_dir is not None:
         debug("Exporting chromosome track data", debug_mode & DEBUG_PROG)
@@ -443,7 +443,7 @@ def simulate( num_pool, noise, num_pop, num_iter,
     debug("Done", debug_mode & DEBUG_PROG)
     return population
 
-def simulate_ga_loop( num_pop, num_iter, fitness_fn,
+def simulate_ga_loop( num_pop, num_iter, num_elite, p_mutate, fitness_fn,
                       episodes_factor, debug_mode=DEBUG):
     # Init population
     population = init_population(num_pop)
@@ -457,7 +457,8 @@ def simulate_ga_loop( num_pop, num_iter, fitness_fn,
     debug("First generation evaluated", debug_mode & DEBUG_STEP)
     for i in range(num_iter-1):
         debug("Iteration %d" % (i+1,), debug_mode & DEBUG_PROG)
-        generation = switch_generations(num_pop, population, debug_mode)
+        generation = switch_generations(num_pop, num_elite, p_mutate,
+                population, debug_mode)
         debug("Generation complete", debug_mode & DEBUG_STEP)
         debug([x for x in generation.individuals.all()],
                 debug_mode & DEBUG_VALUE)
