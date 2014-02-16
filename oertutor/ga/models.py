@@ -592,21 +592,16 @@ class Generation(models.Model):#{{{
 
     def select_best_individuals(self, num=1):
         """
-        Selects the n best individuals in this generation.
+        Selects the num best individuals in this generation.
 
         Arguments:
           num - The number of individuals to return. Default: 1.
 
         Returns:
-          The best individual of this generation
-            or a list of the n best individuals depending on num.
+          The list of the num best individuals.
         """
-        individuals = self.individuals.order_by(
+        return  self.individuals.order_by(
                 '-generationmembership__fitness')[0:num]
-        if num == 1:
-            return individuals[0]
-        else:
-            return individuals
 
     def select_worst_individuals(self, num=1):
         """
@@ -752,5 +747,5 @@ class Population(models.Model):#{{{
         # Select current generation
         generation = self.current_generation()
         # Return best chromosome
-        return generation.select_best_individuals()
+        return generation.select_best_individuals()[0]
 #}}}
