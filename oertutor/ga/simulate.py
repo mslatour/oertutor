@@ -337,7 +337,8 @@ class SimulationSuite:
                                 self.default_setup.items()
                                 +self.setups[simulation].items()))
                     debug("Analyzing %s" % (simulation,), debug_mode & DEBUG_SUITE)
-                    self.analyze(environment, simulation, population)
+                    self.analyze(environment, simulation, population,
+                            debug_mode)
                     clear(False)
                 debug('Combining %d repetitions' % (repetitions, ),
                         debug_mode & DEBUG_SUITE)
@@ -348,7 +349,7 @@ class SimulationSuite:
             debug("Exporting", debug_mode & DEBUG_SUITE)
             self.export(environment)
 
-    def analyze(self, environment, simulation, population):
+    def analyze(self, environment, simulation, population, debug_mode):
         for analyzer in self.analyzers:
             if environment not in self.results:
                 self.results[environment] = {}
@@ -357,6 +358,8 @@ class SimulationSuite:
             if simulation not in self.results[environment][analyzer]:
                 self.results[environment][analyzer][simulation] = []
 
+            debug("Running %s on %s in %s" % (analyzer, simulation,
+                environment), debug_mode & DEBUG_SUITE)
             self.results[environment][analyzer][simulation].append(
                     self.analyzers[analyzer].analyze(
                         population = population,
