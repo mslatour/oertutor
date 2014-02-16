@@ -121,7 +121,7 @@ def switch_generations(num_pop, num_elite, p_mutate, population, DEBUG=0x0):
 
     # Add any individuals that have not mated as their own offspring, this will
     # happen when the number of survivors is an odd number
-    offspring += survivors[len(offspring):]
+    offspring += [s.chromosome for s in survivors[len(offspring):]]
 
     nxt_generation = elite
     for member in offspring:
