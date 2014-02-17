@@ -390,6 +390,14 @@ class Individual(models.Model):#{{{
     def factory(chromosome):
         return Individual.objects.create(chromosome=chromosome)
 
+    @staticmethod
+    def release_oldest_lock():
+        obj = Individual.objects.exclude(locked=None).order_by('locked')
+        try:
+            obj.unlock()
+        except ImpossibleException:
+            pass
+
     def fitness(self, generation=None):
         """
         Return the fitness value of this individual. The fitness is defined as
