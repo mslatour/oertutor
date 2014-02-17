@@ -1,7 +1,7 @@
 import os
 # Django settings for oertutor project.
 
-DEBUG = True
+DEBUG = False
 TEMPLATE_DEBUG = DEBUG
 
 ADMINS = (

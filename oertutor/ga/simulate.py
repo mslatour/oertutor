@@ -4,6 +4,7 @@ from oertutor.ga.algorithm import init_population, switch_generations
 from oertutor.ga.exceptions import ImpossibleException
 from oertutor.ga.utils import debug, DEBUG_VALUE, DEBUG_STEP, DEBUG_PROG, \
         DEBUG_SUITE
+from django.db import reset_queries
 from django.db.models import Avg, Min, Max
 from decimal import Decimal
 from difflib import SequenceMatcher
@@ -13,6 +14,7 @@ from math import factorial
 import random
 import os
 import json
+import gc
 
 DEBUG = DEBUG_PROG | DEBUG_STEP
 MIN_SOL_LEN = 3
@@ -48,9 +50,9 @@ class DistanceSampleEnvironment(Environment):
                 if kwargs['len_solution'] > len(pool):
                     raise Exception('Not enough genes in the pool')
                 self.solutions = []
-                for _ in range(kwargs['num_solutions']):
+                for _ in xrange(kwargs['num_solutions']):
                     seq = []
-                    for _ in range(kwargs['len_solution']):
+                    for _ in xrange(kwargs['len_solution']):
                         gene = random.choice(pool)
                         while gene in seq:
                             gene = random.choice(pool)
@@ -141,6 +143,8 @@ class Analyzer:
             elif len(results1) != len(results2):
                 raise Exception('Result sets have different size')
             results1 = self.combine_aux(i, results1, results2)
+        del result_iter
+        del results
         return results1
 
     def combine_aux(self, i, results1, results2):
@@ -170,23 +174,27 @@ class Analyzer:
 class RegretAnalyzer(Analyzer):
     def analyze(self, population, setup, environment, **kwargs):
         results = [["evaluation", "regret"]]
-        evaluations = Evaluation.objects.filter(population=population)
+        evaluations = enumerate(
+                Evaluation.objects.filter(population=population))
         optimal_expected_value = 0
-        for index, evaluation in enumerate(evaluations):
+        for index, evaluation in evaluations:
             optimal_expected_value *= index
             optimal_expected_value += Decimal(
                     environment.fitness(environment.optimal()))
             optimal_expected_value /= (index+1)
             results.append([index,
                 min(1, max(0, optimal_expected_value-Decimal(evaluation.value)))])
+            del optimal_expected_value
+        del evaluations
         return results
 
 class CumulativeRegretAnalyzer(Analyzer):
     def analyze(self, population, setup, environment, **kwargs):
         results = [["evaluation", "regret"]]
         regret = 0
-        evaluations = Evaluation.objects.filter(population=population)
-        for index, evaluation in enumerate(evaluations):
+        evaluations = enumerate(
+                Evaluation.objects.filter(population=population))
+        for index, evaluation in evaluations:
             if environment.optimal(evaluation.chromosome):
                 results.append([index, regret])
             else:
@@ -195,22 +203,28 @@ class CumulativeRegretAnalyzer(Analyzer):
                 regret += min(1, max(0,
                     optimal_expected_value-Decimal(str(evaluation.value))))
                 results.append([index, regret])
+                del optimal_expected_value
+        del evaluations
         return results
 
 class EvaluationAnalyzer(Analyzer):
     def analyze(self, population, setup, **kwargs):
         results = [["evaluation", "regret"]]
-        evaluations = Evaluation.objects.filter(population=population)
-        for index, evaluation in enumerate(evaluations):
+        evaluations = enumerate(
+                Evaluation.objects.filter(population=population))
+        for index, evaluation in evaluations:
             results.append([index, evaluation.value])
+        del evaluations
         return results
 
 class EvaluationChoiceAnalyzer(Analyzer):
     def analyze(self, population, setup, **kwargs):
         results = [["evaluation", "chromosome"]]
-        evaluations = Evaluation.objects.filter(population=population)
-        for index, evaluation in enumerate(evaluations):
+        evaluations = enumerate(
+                Evaluation.objects.filter(population=population))
+        for index, evaluation in evaluations:
             results.append([index, str(evaluation.chromosome)])
+        del evaluations
         return results
 
     def combine(self, results):
@@ -223,18 +237,23 @@ class CoverageAnalyzer(Analyzer):
         results = [["generation", "coverage"]]
         num_pool = setup['num_pool']
         total = (Decimal(sum([factorial(num_pool)/factorial(num_pool-l)
-            for l in range(1, num_pool+1)])))
+            for l in xrange(1, num_pool+1)])))
         coverage = set([])
-        for index, generation in enumerate(population.generations.all()):
+        generations = enumerate(population.generations.all())
+        for index, generation in generations:
             for individual in generation.individuals.all():
                 coverage.add(tuple(individual.chromosome))
             results.append([index, Decimal(len(coverage))/total])
+        del generations
+        del coverage
+        del total
         return results
 
 class FitnessAnalyzer(Analyzer):
     def analyze(self, population, setup, **kwargs):
         results = [["generation", "best", "average", "worst"]]
-        for index, generation in enumerate(population.generations.all()):
+        generations = enumerate(population.generations.all())
+        for index, generation in generations:
             best = generation.individuals.aggregate(
                     max=Max("generationmembership__fitness"))['max']
             worst = generation.individuals.aggregate(
@@ -242,18 +261,23 @@ class FitnessAnalyzer(Analyzer):
             avg = generation.individuals.aggregate(
                     avg=Avg("generationmembership__fitness"))['avg']
             results.append([index, best, avg, worst])
+        del generations
         return results
 
 class FitnessAllAnalyzer(Analyzer):
     def analyze(self, population, setup, **kwargs):
-        results = [["generation"]+[str(i) for i in range(1,
+        results = [["generation"]+[str(i) for i in xrange(1,
             population.current_generation().individuals.count()+1)]]
-        for index, generation in enumerate(population.generations.all()):
+        generations = enumerate(population.generations.all())
+        for index, generation in generations:
             values = [index]
             for individual in generation.individuals.order_by(
                     '-generationmembership__fitness'):
                 values.append(generation.fitness(individual))
             results.append(values)
+        del values
+        del individual
+        del generations
         return results
 
 class SimulationSuite:
@@ -288,6 +312,7 @@ class SimulationSuite:
             f_setups = open(self.output_dir+"setups.json", "w")
             json.dump(self.setups, f_setups, indent=2)
             f_setups.close()
+            del f_setups
 
     def set_pool(self, pool=None):
         if isinstance(pool, list):
@@ -327,7 +352,7 @@ class SimulationSuite:
         for environment in self.environments:
             debug("Entering %s" % (environment,), debug_mode & DEBUG_SUITE)
             for simulation in self.setups:
-                for repetition in range(repetitions):
+                for repetition in xrange(repetitions):
                     debug("Running %s [Repetition %d]" %
                             (simulation, repetition), debug_mode & DEBUG_SUITE)
                     population = self.simulation_fn(
@@ -339,6 +364,8 @@ class SimulationSuite:
                     debug("Analyzing %s" % (simulation,), debug_mode & DEBUG_SUITE)
                     self.analyze(environment, simulation, population,
                             debug_mode)
+                    del population
+                    reset_queries()
                     clear(False)
                 debug('Combining %d repetitions' % (repetitions, ),
                         debug_mode & DEBUG_SUITE)
@@ -387,10 +414,10 @@ def gen_solutions(num, pool, min_len=1, max_len=4):
     # Ensure that sequences are not longer than possible
     max_len = min(len(pool), max_len)
     solutions = []
-    for _ in range(num):
+    for _ in xrange(num):
         seq = []
         length = random.randint(min_len, max_len)
-        for _ in range(length):
+        for _ in xrange(length):
             gene = random.choice(pool)
             while gene in seq:
                 gene = random.choice(pool)
@@ -412,13 +439,26 @@ def create_fitness_fn(solutions, noise):
 
 
 def clear(clear_genes=False):
-    Evaluation.objects.all().delete()
-    Generation.objects.all().delete()
-    Population.objects.all().delete()
-    Individual.objects.all().delete()
-    Chromosome.objects.all().delete()
+    objs = Evaluation.objects.all()
+    objs.delete()
+    del objs
+    objs = Generation.objects.all()
+    objs.delete()
+    del objs
+    objs = Population.objects.all()
+    objs.delete()
+    del objs
+    objs = Individual.objects.all()
+    objs.delete()
+    del objs
+    objs = Chromosome.objects.all()
+    objs.delete()
+    del objs
     if clear_genes:
-        Gene.objects.all().delete()
+        objs = Gene.objects.all()
+        objs.delete()
+        del objs
+    gc.collect()
 
 def simulate( num_pool, noise, num_pop, num_iter, num_elite, p_mutate,
               episodes_factor, debug_mode=DEBUG, export_dir=None):
@@ -458,8 +498,9 @@ def simulate_ga_loop( num_pop, num_iter, num_elite, p_mutate, fitness_fn,
     simulate_evaluate_generation(generation, num_pop*episodes_factor,
             fitness_fn, debug_mode)
     debug("First generation evaluated", debug_mode & DEBUG_STEP)
-    for i in range(num_iter-1):
+    for i in xrange(num_iter-1):
         debug("Iteration %d" % (i+1,), debug_mode & DEBUG_PROG)
+        del generation
         generation = switch_generations(num_pop, num_elite, p_mutate,
                 population, debug_mode)
         debug("Generation complete", debug_mode & DEBUG_STEP)
@@ -473,7 +514,7 @@ def simulate_ga_loop( num_pop, num_iter, num_elite, p_mutate, fitness_fn,
 
 def simulate_evaluate_generation( generation, episodes,
                                   fitness_fn, debug_mode=DEBUG):
-    for _ in range(int(episodes)):
+    for _ in xrange(int(episodes)):
         try:
             individual = generation.select_next_individual()
         except ImpossibleException:
