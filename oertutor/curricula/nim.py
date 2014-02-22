@@ -1,4 +1,4 @@
-from oertutor.tutor.models import Curriculum, KnowledgeComponent, TutorMove, Resource
+from oertutor.tutor.models import Curriculum, KnowledgeComponent, Resource
 
 def load_db():
     # Register curriculum
@@ -7,12 +7,6 @@ def load_db():
         description = "In this topic you will learn everything that you need" +
             " to be a champion at the mathematical game NIM"
     )
-
-    # Register tutor moves
-    elicit, created = TutorMove.objects.get_or_create(title="Elicit")
-    elicit.save()
-    tell, created = TutorMove.objects.get_or_create(title="Tell")
-    tell.save()
 
     # Knowledge Components
     kcs = {}
@@ -71,7 +65,6 @@ def load_db():
     resource, created = Resource.objects.get_or_create(
         title = "Rules of NIM game",
         source = "/static/html/oer1.html",
-        tm = tell,
         kc = kcs['rules']
     )
     if created:
@@ -80,7 +73,6 @@ def load_db():
     resource, created = Resource.objects.get_or_create(
         title = "NIM rules",
         source = "/static/html/oer4.html",
-        tm = tell,
         kc = kcs['rules']
     )
     if created:
@@ -89,7 +81,6 @@ def load_db():
     resource, created = Resource.objects.get_or_create(
         title = "Play a game",
         source = "/static/html/oer5.html",
-        tm = elicit,
         kc = kcs['intuition']
     )
     if created:
@@ -98,7 +89,6 @@ def load_db():
     resource, created = Resource.objects.get_or_create(
         title = "Example of pair canceling",
         source = "/static/html/oer3.html",
-        tm = tell,
         kc = kcs['cancel2powers']
     )
     if created:
@@ -107,7 +97,6 @@ def load_db():
     resource, created = Resource.objects.get_or_create(
         title = "Learn about binary numbers",
         source = "/static/html/oer6.html",
-        tm = tell,
         kc = kcs['binary']
     )
     if created:
@@ -116,7 +105,6 @@ def load_db():
     resource, created = Resource.objects.get_or_create(
         title = "What is this XOR?",
         source = "/static/html/oer7.html",
-        tm = tell,
         kc = kcs['xor']
     )
     if created:
