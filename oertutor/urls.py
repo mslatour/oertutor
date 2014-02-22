@@ -3,13 +3,14 @@ from oertutor.views import *
 from oertutor.tutor.views import *
 
 # Uncomment the next two lines to enable the admin:
-# from django.contrib import admin
-# admin.autodiscover()
+from django.contrib import admin
+admin.autodiscover()
 
 urlpatterns = patterns('oertutor.views',
     url(r'^$', interface, name='interface'),
     url(r'^nim/$', nim, name='nim'),
     url(r'^tutor/$', tutor, name='tutor'),
+    url(r'^tutor/next$', next_step, name='tutor'),
     url(r'^tutor/observation/$', observation, name='observation'),
     # Examples:
     # url(r'^$', 'oertutor.views.home', name='home'),
@@ -19,5 +20,5 @@ urlpatterns = patterns('oertutor.views',
     # url(r'^admin/doc/', include('django.contrib.admindocs.urls')),
 
     # Uncomment the next line to enable the admin:
-    # url(r'^admin/', include(admin.site.urls)),
+    url(r'^admin/', include(admin.site.urls)),
 )
