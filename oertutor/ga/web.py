@@ -3,14 +3,7 @@ from oertutor.ga.algorithm import *
 
 MAX_EPISODES = 10;
 
-class State:
-    """
-    Store state information of the current user.
-    """
-    pass
-
-def request_sequence(population_id):
-    population = Population.objects.get(pk=population_id)
+def request_sequence(population):
     generation = population.current_generation()
     # Determine number of stored evaluations:
     eval_count = Evaluation.objects.filter(generation=generation).count()
