@@ -1,47 +1,63 @@
-from oertutor.tutor.models import Curriculum, KnowledgeComponent, Resource
+from oertutor.tutor.models import Curriculum, KnowledgeComponent, Resource, \
+    Test
 
 def load_db():
     # Register curriculum
     curr, created = Curriculum.objects.get_or_create(
-        title = "Nim",
+        title = "Become the Master of Nim",
         description = "In this topic you will learn everything that you need" +
-            " to be a champion at the mathematical game NIM"
+            " to be a champion at the game NIM"
     )
+
+    # Test
+    test, created = Test.objects.get_or_create(title='Generic test')
 
     # Knowledge Components
     kcs = {}
     kcs['rules'], created = KnowledgeComponent.objects.get_or_create(
         title = "Rules of the game",
+        pretest = test,
+        posttest = test,
         description = "How does the game work?",
         curriculum = curr
     )
 
     kcs['intuition'], created = KnowledgeComponent.objects.get_or_create(
         title = "Intuition",
+        pretest = test,
+        posttest = test,
         description = "Getting a feel for the game",
         curriculum = curr
     )
 
     kcs['binary'], created = KnowledgeComponent.objects.get_or_create(
         title = "Binary numbers",
+        pretest = test,
+        posttest = test,
         description = "What are binary numbers?",
         curriculum = curr
     )
 
     kcs['cancel2powers'], created = KnowledgeComponent.objects.get_or_create(
         title = "They come in pairs",
+        pretest = test,
+        posttest = test,
         description = "Cancel equal powers of 2",
         curriculum = curr
     )
 
     kcs['xor'], created = KnowledgeComponent.objects.get_or_create(
         title = "It is one or the other",
+        pretest = test,
+        posttest = test,
         description = "Learning the XOR operation",
         curriculum = curr
     )
 
     kcs['nimsum'], created = KnowledgeComponent.objects.get_or_create(
         title = "Nim-sum",
+        pretest = test,
+        posttest = test,
         description = "Using XOR to win the game",
         curriculum = curr
     )
