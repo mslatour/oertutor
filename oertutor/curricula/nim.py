@@ -1,5 +1,4 @@
-from oertutor.tutor.models import Curriculum, KnowledgeComponent, Resource, \
-    Test
+from oertutor.tutor.models import *
 
 def load_db():
     # Register curriculum
@@ -11,6 +10,18 @@ def load_db():
 
     # Test
     test, created = Test.objects.get_or_create(title='Generic test')
+    q1 = Question.factory(handle='q1',
+        question="Question1", answer="Answer1")
+    q2 = MultipleChoiceQuestion.factory(
+            handle='q2',
+            question="Question2",
+            answer="Answer2",
+            answer_dict={
+                'Answer1': 'The wrong answer',
+                'Answer2': 'The right answer'})
+    test.questions.add(q1)
+    test.questions.add(q2)
+    test.save()
 
     # Knowledge Components
     kcs = {}
@@ -21,6 +32,7 @@ def load_db():
         description = "How does the game work?",
         curriculum = curr
     )
+    StudentCategory.objects.get_or_create(title="Group 1", kc=kcs['rules'])
 
     kcs['intuition'], created = KnowledgeComponent.objects.get_or_create(
         title = "Intuition",
@@ -29,6 +41,7 @@ def load_db():
         description = "Getting a feel for the game",
         curriculum = curr
     )
+    StudentCategory.objects.get_or_create(title="Group 1", kc=kcs['intuition'])
 
     kcs['binary'], created = KnowledgeComponent.objects.get_or_create(
         title = "Binary numbers",
@@ -37,6 +50,7 @@ def load_db():
         description = "What are binary numbers?",
         curriculum = curr
     )
+    StudentCategory.objects.get_or_create(title="Group 1", kc=kcs['binary'])
 
     kcs['cancel2powers'], created = KnowledgeComponent.objects.get_or_create(
         title = "They come in pairs",
@@ -45,14 +59,8 @@ def load_db():
         description = "Cancel equal powers of 2",
         curriculum = curr
     )
-
-    kcs['xor'], created = KnowledgeComponent.objects.get_or_create(
-        title = "It is one or the other",
-        pretest = test,
-        posttest = test,
-        description = "Learning the XOR operation",
-        curriculum = curr
-    )
+    StudentCategory.objects.get_or_create(title="Group 1",
+            kc=kcs['cancel2powers'])
 
     kcs['nimsum'], created = KnowledgeComponent.objects.get_or_create(
         title = "Nim-sum",
@@ -61,6 +69,7 @@ def load_db():
         description = "Using XOR to win the game",
         curriculum = curr
     )
+    StudentCategory.objects.get_or_create(title="Group 1", kc=kcs['nimsum'])
 
     # Save knowledge components
     for kc in kcs:
@@ -70,8 +79,7 @@ def load_db():
     kcs['intuition'].antecedents.add(kcs['rules'])
     kcs['binary'].antecedents.add(kcs['intuition'])
     kcs['cancel2powers'].antecedents.add(kcs['binary'])
-    kcs['xor'].antecedents.add(kcs['cancel2powers'])
-    kcs['nimsum'].antecedents.add(kcs['xor'])
+    kcs['nimsum'].antecedents.add(kcs['cancel2powers'])
 
     # Save structure
     for kc in kcs:
@@ -114,14 +122,6 @@ def load_db():
         title = "Learn about binary numbers",
         source = "/static/html/oer6.html",
         kc = kcs['binary']
-    )
-    if created:
-        resource.save()
-
-    resource, created = Resource.objects.get_or_create(
-        title = "What is this XOR?",
-        source = "/static/html/oer7.html",
-        kc = kcs['xor']
     )
     if created:
         resource.save()
