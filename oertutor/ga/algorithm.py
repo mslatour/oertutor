@@ -1,5 +1,5 @@
 from copy import copy
-from oertutor.ga.models import Population, Individual, Chromosome, Gene
+from oertutor.ga.models import Population, Generation, Individual, Chromosome, Gene
 from oertutor.ga.exceptions import ImpossibleException
 from oertutor.ga.utils import debug, DEBUG_VALUE, DEBUG_STEP
 
@@ -17,22 +17,24 @@ MAX_LEN = 3 # for solution
 # mutation. By doing it in this way we solve for any left-overs due to the fact
 # that depending on the population size, the ratios will not result in integers
 
-def init_population(num, cls=Gene):
+def init_population(num, population=None, genes=None):
     """
     Initialize a new population with a first generation. The generation
     consists of individuals with chromosomes of length 1.
 
     Arguments:
       num  - Number of individuals in each generation of the population.
-      cls  - Class, the model of the genes. Default: Gene
+      population - The population to init, default: a new one.
+      genes - Genes to add to the population, default: all genes.
 
     Returns:
-      The created population
+      The created or used population
     """
+    if genes is None:
+        genes = Gene.objects.all()
     individuals = []
     # Mapping to lookup chromosomes by its gene member
     chromosomes_gene_map = {}
-    genes = cls.objects.all()
     n_genes = len(genes)
     # If there is enough room in the population for all the genes
     if len(genes) <= num:
@@ -91,7 +93,11 @@ def init_population(num, cls=Gene):
             raise ValueError('Sum of gene apriori values was negative.')
     # Create and return a new population with an initial generation containing
     # the sampled chromosomes.
-    return Population.factory(individuals)
+    if population is None:
+        return Population.factory(individuals)
+    else:
+        Generation.factory(individuals, population)
+        return population
 
 def switch_generations(num_pop, num_elite, p_mutate, population, DEBUG=0x0):
     # Fetch current generation
