@@ -1,7 +1,13 @@
 from oertutor.ga.models import *
-from oertutor.ga.algorithm import *
+from oertutor.ga import algorithm as galg
 
 MAX_EPISODES = 10;
+NUM_POP = 10;
+NUM_ELITE = 2;
+P_MUTATE = 0.05;
+
+def init_population(population, genes):
+    galg.init_population(NUM_POP, population, genes)
 
 def request_sequence(population):
     generation = population.current_generation()
@@ -22,7 +28,7 @@ def request_sequence(population):
         # State: Enough evaluations performed for this generation
         # Solution: Move to next generation
         # TODO: Find a way to prevent multiple users triggering this
-        switch_generations(NUM_POP, NUM_ELITE, P_MUTATE, population)
+        galg.switch_generations(NUM_POP, NUM_ELITE, P_MUTATE, population)
         return request_sequence(population)
 
 def store_evaluation(sequence_id, generation_id, evaluation):
