@@ -1,25 +1,26 @@
 from django.db import models
+from django import forms
 from oertutor.ga.models import Gene, Individual, Population
 
 class Student(models.Model):
     NEW = 'new'
+    INTRO = 'intr'
     PRETEST = 'pre'
     SEQUENCE = 'seq'
     POSTTEST = 'post'
+    SKIP = 'skip'
     DONE = 'done'
     PHASES = (
         (NEW, 'New'),
+        (INTRO, 'Introduction'),
         (PRETEST, 'Pre-test'),
         (SEQUENCE, 'Sequence'),
         (POSTTEST, 'Post-test'),
+        (SKIP, 'Skipped'),
         (DONE, 'Done')
     )
     phase = models.CharField(max_length=4, choices=PHASES, default=NEW)
     started = models.DateTimeField(auto_now_add=True)
-    pretest = models.DecimalField(null=True, max_digits=4, decimal_places=2)
-    population = models.ForeignKey(Population, null=True, related_name='+')
-    sequence = models.ForeignKey(Individual, null=True, related_name='+')
-    posttest = models.DecimalField(null=True, max_digits=4, decimal_places=2)
     updated = models.DateTimeField(auto_now=True)
 
     @staticmethod
@@ -71,6 +72,7 @@ class KnowledgeComponent(models.Model):
 
 class StudentCategory(Population):
     title = models.CharField(max_length=50)
+    kc = models.ForeignKey('KnowledgeComponent', related_name='+')
 
     def __unicode__(self):
         return str(self)
@@ -87,10 +89,14 @@ class StudentCategory(Population):
 
 class Trial(models.Model):
     kc = models.ForeignKey('KnowledgeComponent')
-    student = models.ForeignKey('Student')
-    pretest_result = models.ForeignKey('TestResult', related_name='+')
+    curriculum = models.ForeignKey('Curriculum', related_name='+')
+    student = models.ForeignKey('Student', related_name='trials')
+    pretest_result = models.ForeignKey('TestResult', related_name='+',
+            null=True)
     sequence = models.ForeignKey(Individual, null=True, related_name='+')
-    posttest_result = models.ForeignKey('TestResult', related_name='+')
+    sequence_position = models.SmallIntegerField(default=0)
+    posttest_result = models.ForeignKey('TestResult', related_name='+',
+            null=True)
     category = models.ForeignKey('StudentCategory', null=True)
     datetime = models.DateTimeField(auto_now = True)
 
@@ -101,6 +107,15 @@ class Resource(Gene):
     title = models.CharField(max_length=50)
     source = models.URLField()
     kc = models.ForeignKey(KnowledgeComponent, related_name='resources')
+
+    def __unicode__(self):
+        return str(self)
+
+    def __str__(self):
+        return self.title
+
+    def __repr__(self):
+        return self.title
 
 class Exercise(Resource):
     params = models.CharField(max_length=255)
@@ -129,8 +144,16 @@ class Test(models.Model):
         return self.title
 
 class Question(models.Model):
+    handle = models.CharField(max_length=50)
     question = models.CharField(max_length=255)
     answer = models.CharField(max_length=255)
+    template = models.CharField(max_length=255,
+            default='question/generic.html')
+
+    @staticmethod
+    def factory(**kwargs):
+        q, created = Question.objects.get_or_create(**kwargs)
+        return q
 
     def __unicode__(self):
         return str(self)
@@ -141,13 +164,34 @@ class Question(models.Model):
     def __repr__(self):
         return self.question[:10]
 
+class MultipleChoiceQuestion(Question):
+    answers = models.ManyToManyField('Answer', related_name='+')
+
+    def __init__(self, *args, **kwargs):
+        if 'template' not in kwargs:
+            kwargs['template'] = 'question/multiplechoice.html'
+        super(MultipleChoiceQuestion, self).__init__(*args, **kwargs)
+
+    @staticmethod
+    def factory(answer_dict={}, **kwargs):
+        q, created = MultipleChoiceQuestion.objects.get_or_create(**kwargs)
+        for handle in answer_dict:
+            q.answers.add(Answer.objects.create(handle=handle,
+                body=answer_dict[handle]))
+        q.save()
+        return q
+
+class Answer(models.Model):
+    handle = models.CharField(max_length=50)
+    body = models.CharField(max_length=255)
+
 class TestResult(models.Model):
     test = models.ForeignKey('Test', related_name='results')
     student = models.ForeignKey('Student')
     score = models.DecimalField(null=True, max_digits=4, decimal_places=2)
     datetime = models.DateTimeField(auto_now = True)
 
-class StudentAnswers(models.Model):
+class StudentAnswer(models.Model):
     question = models.ForeignKey('Question')
     testresult = models.ForeignKey('TestResult', related_name='answers')
     student = models.ForeignKey('Student')

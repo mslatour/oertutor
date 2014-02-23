@@ -1,0 +1,17 @@
+{% extends "index.html" %}
+{% load staticfiles %}
+
+{% block content %}
+<div class='well'>
+    <form method="post" action='/tutor/next'>
+        {% csrf_token %}
+        <fieldset>
+			<legend><h2>{{ test.title }}</h2></legend>
+            {% for q in questions %}
+                {% include q.template with q=q %}
+            {% endfor %}
+        </fieldset>
+        <button type='submit' class='btn btn-primary'>Submit answers</button>
+    </form>
+</div>
+{% endblock %}

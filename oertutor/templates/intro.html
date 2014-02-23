@@ -1,0 +1,10 @@
+{% extends "index.html" %}
+{% load staticfiles %}
+
+{% block content %}
+<div class='well'>
+	<h3>{{ title }}</h3>
+	<p>{{ description }}</p>
+	<a href='/tutor/next' class='btn btn-primary'>Start</a>
+</div>
+{% endblock %}
