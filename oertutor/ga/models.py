@@ -457,6 +457,15 @@ class Individual(models.Model):#{{{
     def __unicode__(self):
         return self.__repr__()
 
+    def __len__(self):
+        return len(self.chromosome)
+
+    def __getitem__(self, key):
+        return self.chromosome[key]
+
+    def __iter__(self):
+        return iter(self.chromosome)
+
     def __repr__(self):
         return "%d::{%s}" % (self.pk, self.chromosome)
 
