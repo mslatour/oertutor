@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>OER7</title>
+</head>
+<body>
+<style>
+p {
+    font-size: 21px;
+}
+</style>
+<H3>
+    Introduction
+</H3>
+In mathematics, inclusive OR is given preference to exclusive OR (also
+called XOR).
+
+For example, when you write <B>p V q</B> which is read "p OR q", this
+is inclusive OR.  This statement is true when p is true, or q is true,
+or both p and q is true.  Inclusive OR is used as the default meaning
+of OR, and works more often in logic than exclusive OR.
+
+We often see XOR used in sentences.  For example, if someone says
+"This summer, I am going to London, or I am going to Paris", they seem
+to suggest that they plan to go to one or the other, but not both.
+Even though their statement wouldn't be considered wrong if they
+went to both cities, it suggests very strongly that they intend
+to go to one city.  (Of course, in logic, it's hard to convey the
+notion "suggests very strongly").
+
+You would think XOR wouldn't be that interesting an operator.
+It's similar to OR, so why should it be any more interesting than
+OR?
+
+But it is!
+<H3>
+    Various Views of XOR
+</H3>
+You can think of XOR in many ways.  Assume that <B>p</B> and
+<B>q</B> are Boolean variables.  Also assume that <B>p<sub>1</sub>,
+    p<sub>2</sub>, ...p<sub>n</sub></B> are Boolean variables.  Let (+) be
+the XOR operator (this is a circle with a plus sign inside it).  In
+this case, we assume that <B>p</B> and <B>q</B> are boolean values,
+instead of words, and we assume (+) is plain XOR, not bitwise XOR.
+Later on, we'll use it as bitwise XOR.
+
+<UL type=disc>
+    <LI>
+    <B>p (+) q</B> is true if exactly one of <B>p</B> and <B>q</B> is
+    true.  This is the conventional definition of XOR.
+    </LI>
+    <LI>
+    <B>p<sub>1</sub> (+) p<sub>2</sub> (+) ... (+) p<sub>n</sub></B> is true 
+    if the number of variables with the value true is odd (and is false
+    if the number of variables with the value true is even).  Notice this
+    definition ignores the variables which are assigned to false.
+
+    This may seem like an odd view of XOR.  (No pun intended). However,
+    if you believe that XOR is associative (which it is), it's merely an
+    extension of the first definition of XOR.
+
+    This definition makes sense, if you read the next definition.
+    </LI>
+    <LI>
+    <B>p<sub>1</sub> (+) p<sub>2</sub> (+) ... (+) p<sub>n</sub></B> is the
+    same as adding modulo 2.  If <B>p<sub>i</sub></b> is true, then
+    treat it as a 1, otherwise treat it as a 0.   Then, XOR operation
+    is equivalent to:
+    <PRE>
+     p<sub>1</sub> (+) p<sub>2</sub> (+) ... (+) p<sub>n</sub> == ( p<sub>1</sub> + p<sub>2</sub> + ... + p<sub>n</sub> ) % 2
+    </PRE>
+    Thus, XOR applied to a bunch of Boolean variables is the same as summing
+    up all the variables' values (where true is 1 and false is 0), and dividing
+    mod 2.  Recall that dividing mod 2 is one way to determine if a number
+    is even or odd.  Since only the variables that have value 1 contribute
+    to the sum (0 is the identity value in sums), this determines how many
+    variables have value 1.
+    </LI>
+</UL>
+<H4>
+    Parity Check
+</H4>
+People often use XOR as a means of doing a <I>parity check</I>.
+A bitstring has even parity if the number of 1's in the string is
+even.  It has an odd parity if the number of 1's is odd.  If you
+XOR the bits together, you can tell whether a bitstring has even
+or odd parity.
+
+This can often be used to verify data sent across a network,
+where there's some probability a bit may be corrupted.   For example,
+suppose you're sending N bytes across the network from a source
+location to a destination location.
+
+How can you determine whether the bytes were sent correctly?
+One way is to use a kind of checksum, which uses XOR.   Each byte
+can be written as <B>b<sub>7</sub>b<sub>6</sub>...b<sub>0</sub></B>.
+For each byte, XOR all the bits in position <B>b<sub>i</sub></B>.
+
+If N was 10, and you're transmitting 10 bytes, then create an 11th
+byte where <B>b<sub>i</sub></B> is the XOR of all 10 bytes
+i<sup>th</sup> bit.  This 11th byte is called the <I>checksum</I>.
+This checksum is also sent across the network.
+
+At the destination end, where the data is being received, you
+can then independently perform the checksum again, and see if the
+checksum you performed matches the checksum sent across.  If so,
+then you have some confidence that no bytes were corrupted.  If
+it's not the same, then the network has corrupted some bytes,
+and you may need to retransmit the data.
+
+Clearly the system could have errors.  For example, if two
+bits were flipped, say, bit 3 of bytes 4 and 5, then the checksum
+would be the same if they hadn't been flipped, but there would
+still be errors.   Nevertheless, it catches some errors.
+<H3>
+    Properties of XOR
+</H3>
+Here are several useful properties of XOR.  This applies to plain XOR
+and bitwise XOR.
+
+<UL type=disc>
+    <LI> <B>x (+) 0 = x</B> 
+
+    XORing with 0 gives you back the same number.  Thus, 0 is the identity
+    for XOR.
+
+    </LI>
+    <LI> <B>x (+) 1 = \x</B> 
+
+    XORing with 1 gives you back the negation of the bit. Again, this
+    comes from the truth table. For bitwise XOR, the property is slightly
+    different: <B>x ^ ~0 = ~x</B> .  That is, if you XOR with all 1's, the
+    result will be the bitwise negation of <B>x</B>.
+
+    </LI>
+    <LI> <B>x (+) x = 0</B> 
+
+    XORing x with itself gives you 0.  That's because <B>x</B> is either
+    0 or 1, and <B>0 (+) 0 = 0</B> and <B>1 (+) 1 = 0</B>.
+
+    </LI>
+    <LI> XOR is associative.  
+
+    That is: <B>(x (+) y) (+) z = x (+) (y (+) z)</B>.
+    You can verify this by using truth tables.
+    </LI>
+    <LI> XOR is commutative.
+    That is: <B>x (+) y = y (+) x</B>.
+    You can verify this by using truth tables.
+</UL>
+
+<H3>
+    Bitwise XOR
+</H3>
+The properties of XOR apply to bitwise XOR.  Suppose <B>x</B> and <B>y</B>
+are 32 bit words.   Then, <B>x ^ y</B> is basically like performing 32
+XORs in parallel on an array of 32 booleans.
+
+<H3>
+    Swapping without "temp"
+</H3>
+Here's one of those brain-teasers that you can give to your
+CS friends.  One of the classic problems any CS major should
+be able to solve is writing code to swap two numbers.  Here's
+how it looks in C.
+<PRE>
+  temp = x ;
+  x = y ;
+  y = temp ;
+</PRE>
+To swap, you introduce a "temp" variable.  Its name doesn't have
+to be "temp", but it is nevertheless an additional temporary variable.
+Now ask your friend to solve this without using a temp variable.
+This means you can ONLY use <B>x</B> and <B>y</B>.  This does NOT
+mean that you name the variable <B>temp2</B>.
+How can you do this?  If you're thinking "perhaps I can use
+bitwise XOR", you're right!   If you're adventuresome, you can
+think about how to do this on your own, but if not, here's the 
+answer.
+<PRE>
+  x = x ^ y ;
+  y = x ^ y ;
+  x = x ^ y ;
+</PRE>
+
+Are you convinced this works?   Perhaps not.   How could
+you be convinced this works?
+
+The key to convincing yourself this works is to keep track of the
+original value of <B>x</B> and <B>y</B>.  Let <B>A</B> be the
+original value of <B>x</B> (that is, the value <B>x</B> has just
+before running these three lines of code).  Similarly, let <B>B</B>
+be the original value of <B>y</B>.
+
+We can comment each line of code to see what's happening.
+
+<PRE>
+// x == A, y == B
+x = x ^ y ;  
+// x == A ^ B, y == B
+y = x ^ y ;  
+// x == A ^ B
+// y == (A ^ B) ^ B == A ^ (B ^ B)  (by Assoc)
+//   == A ^ 0  (by z ^ z == 0 property)
+//   == A      (by z ^ 0 == z property)
+x = x ^ y ;
+// x == ( A ^ B ) ^ A
+//   == ( A ^ A ) ^ B  (by Assoc/Commutativity)
+//   == 0 ^ B            (by z ^ z == 0 property)
+//   == B                (by z ^ 0 == z property)
+// y == A
+</PRE>
+After the second statement has executed, <B>y = A</B>.  After
+the third statement, <B>x = B</B>.
+
+Now it turns out you can do a similar trick using subtraction
+instead of XOR.  Doing swaps with XOR is slightly safer than
+swapping with subtraction because subtraction can cause overflow.
+However, usually overflow occurs in a "nice way" that it may still
+work.  Overflow often just "wraps around", so things may still work
+out fine.
+<H3>
+    Writing bitwise XOR without ^
+</H3>
+Suppose you wanted to implement bitwise XOR, but didn't have
+^ operator.  What would you do?   With bitwise AND (&)
+and bitwise OR (|), you can do this.
+<PRE>
+  x ^ y == (~x & y) | (x & ~y)
+</PRE>
+This is the standard definition of XOR as defined in logic books,
+applied to bitwise operations.
+<H3>
+    Summary
+</H3>
+XOR is an interesting operation.  With it, you can do parity
+checks and swaps without temp variables.
