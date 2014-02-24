@@ -23,25 +23,109 @@ def load_db():
     test.questions.add(q2)
     test.save()
 
-    # Knowledge Components
+    ########################
+    # Knowledge Components #
+    ########################
     kcs = {}
+
+    # KC: Rules of the game
+    test1 = Test.objects.create(title="Let's see what you know about the game.")
+    test1.questions.add(MultipleChoiceQuestion.factory(
+        handle='q1',
+        question="Can you take objects from more than one stack",
+        answer="no2",
+        answer_dict={
+            "null": "I have no idea.",
+            "no1": "No, you can only take one object at a time",
+            "no2": "No, you can only take objects from a single stack",
+            "yes1": "Yes, you are allowed to do that",
+            "yes2": "Yes, but only if there are not enough objects on one stack"
+            }))
+    test1.questions.add(MultipleChoiceQuestion.factory(
+        handle='q2',
+        question="Bob and John are playing the normal version of a Nim game."+\
+                " John takes the last object on table. Who won?",
+        answer="john",
+        answer_dict={
+            "null": "I have no idea.",
+            "bob": "Bob won",
+            "john": "John won",
+            "nobody": "Nobody won yet",
+            "depends": "That depens on whether it was John's second turn"
+            }))
+    test1.questions.add(MultipleChoiceQuestion.factory(
+        handle='q3',
+        question="How many objects are you allowed to take away from a stack",
+        answer="min1",
+        answer_dict={
+            "null": "I have no idea.",
+            "exact1": "Exactly one object.",
+            "all": "You have to take all the objects of that stack that you chose.",
+            "min1": "You have to take at least one object."
+            }))
+    test1.save()
     kcs['rules'], created = KnowledgeComponent.objects.get_or_create(
         title = "Rules of the game",
-        pretest = test,
-        posttest = test,
+        pretest = test1,
+        posttest = test1,
         description = "How does the game work?",
         curriculum = curr
     )
-    StudentCategory.objects.get_or_create(title="Group 1", kc=kcs['rules'])
+    StudentCategory.objects.get_or_create(title="Rules Low", kc=kcs['rules'],
+            upper_score=0.5)
+    StudentCategory.objects.get_or_create(title="Rules High", kc=kcs['rules'],
+            lower_score=0.5)
 
+    # KC: Intuition on how to play
+    test2 = Test.objects.create(title="Let's see what your intuition is about the game.")
+    test2.questions.add(MultipleChoiceQuestion.factory(
+        handle='q1',
+        question="On the table are three stacks. The first stack is empty,\
+        the second stack has two objects and the third stack has one object.\
+        What is the best move to make?",
+        answer="1from2",
+        answer_dict={
+            "null": "I have no idea.",
+            "1from2": "Take one object from the second stack",
+            "2from2": "Take two objects from the second stack",
+            "1from3": "Take one object from the third stack",
+            }))
+    test2.questions.add(MultipleChoiceQuestion.factory(
+        handle='q2',
+        question="On the table are three stacks. The first stack has two\
+        objects. The second stack has two objects. The third stack has one object.\
+        What is the best move to make?",
+        answer="1from3",
+        answer_dict={
+            "null": "I have no idea.",
+            "1from1": "Take one object from the first stack",
+            "2from1": "Take two objects from the first stack",
+            "1from2": "Take one object from the second stack",
+            "2from2": "Take two objects from the second stack",
+            "1from3": "Take one object from the third stack",
+            }))
+    test2.questions.add(MultipleChoiceQuestion.factory(
+        handle='q3',
+        question="On the table are three stacks. All stacks have two objects.\
+        What is the best move to make?",
+        answer="2fromany",
+        answer_dict={
+            "null": "I have no idea.",
+            "1fromany": "Take one object from the any single stack",
+            "2fromany": "Take two objects from the any single stack",
+            }))
+    test2.save()
     kcs['intuition'], created = KnowledgeComponent.objects.get_or_create(
         title = "Intuition",
-        pretest = test,
-        posttest = test,
+        pretest = test2,
+        posttest = test2,
         description = "Getting a feel for the game",
         curriculum = curr
     )
-    StudentCategory.objects.get_or_create(title="Group 1", kc=kcs['intuition'])
+    StudentCategory.objects.get_or_create(title="Intuition Low", kc=kcs['intuition'],
+            upper_score=0.5)
+    StudentCategory.objects.get_or_create(title="Intuition High", kc=kcs['intuition'],
+            lower_score=0.5)
 
     kcs['binary'], created = KnowledgeComponent.objects.get_or_create(
         title = "Binary numbers",
@@ -50,7 +134,10 @@ def load_db():
         description = "What are binary numbers?",
         curriculum = curr
     )
-    StudentCategory.objects.get_or_create(title="Group 1", kc=kcs['binary'])
+    StudentCategory.objects.get_or_create(title="Binary Low", kc=kcs['binary'],
+            upper_score=0.5)
+    StudentCategory.objects.get_or_create(title="Binary High", kc=kcs['binary'],
+            lower_score=0.5)
 
     kcs['cancel2powers'], created = KnowledgeComponent.objects.get_or_create(
         title = "They come in pairs",
@@ -59,8 +146,10 @@ def load_db():
         description = "Cancel equal powers of 2",
         curriculum = curr
     )
-    StudentCategory.objects.get_or_create(title="Group 1",
-            kc=kcs['cancel2powers'])
+    StudentCategory.objects.get_or_create(title="Cancel2Powers Low",
+            kc=kcs['cancel2powers'], upper_score=0.5)
+    StudentCategory.objects.get_or_create(title="Cancel2Powers High",
+            kc=kcs['cancel2powers'], lower_score=0.5)
 
     kcs['nimsum'], created = KnowledgeComponent.objects.get_or_create(
         title = "Nim-sum",
@@ -69,7 +158,10 @@ def load_db():
         description = "Using XOR to win the game",
         curriculum = curr
     )
-    StudentCategory.objects.get_or_create(title="Group 1", kc=kcs['nimsum'])
+    StudentCategory.objects.get_or_create(title="Nimsum Low", kc=kcs['nimsum'],
+            upper_score=0.5)
+    StudentCategory.objects.get_or_create(title="Nimsum High", kc=kcs['nimsum'],
+            lower_score=0.5)
 
     # Save knowledge components
     for kc in kcs:
@@ -86,42 +178,56 @@ def load_db():
         kcs[kc].save()
 
     # Create resources
-    resource, created = Resource.objects.get_or_create(
-        title = "Rules of NIM game",
-        source = "/static/html/oer1.html",
+    Resource.factory(
+        title = "Introducing the NIM game",
+        source = "/static/html/oer_nim_rules_1.html",
         kc = kcs['rules']
     )
-    if created:
-        resource.save()
 
-    resource, created = Resource.objects.get_or_create(
+    Resource.factory(
         title = "NIM rules",
-        source = "/static/html/oer4.html",
+        source = "/static/html/oer_nim_rules_2.html",
         kc = kcs['rules']
     )
-    if created:
-        resource.save()
 
-    resource, created = Resource.objects.get_or_create(
+    Resource.factory(
+        title = "The three things to know about NIM",
+        source = "/static/html/oer_nim_rules_3.html",
+        kc = kcs['rules']
+    )
+
+    Resource.factory(
+        title = "The game NIM: in short",
+        source = "/static/html/oer_nim_rules_4.html",
+        kc = kcs['rules']
+    )
+
+    Resource.factory(
         title = "Play a game",
-        source = "/static/html/oer5.html",
+        source = "/static/html/oer_nim_intuition_1.html",
         kc = kcs['intuition']
     )
-    if created:
-        resource.save()
 
-    resource, created = Resource.objects.get_or_create(
+    Resource.factory(
+        title = "Some example scenarios",
+        source = "/static/html/oer_nim_intuition_2.html",
+        kc = kcs['intuition']
+    )
+
+    Resource.factory(
+        title = "Intuitive strategy",
+        source = "/static/html/oer_nim_intuition_3.html",
+        kc = kcs['intuition']
+    )
+
+    Resource.factory(
         title = "Example of pair canceling",
         source = "/static/html/oer3.html",
         kc = kcs['cancel2powers']
     )
-    if created:
-        resource.save()
 
-    resource, created = Resource.objects.get_or_create(
+    Resource.factory(
         title = "Learn about binary numbers",
         source = "/static/html/oer6.html",
         kc = kcs['binary']
     )
-    if created:
-        resource.save()

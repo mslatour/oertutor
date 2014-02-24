@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>OER Nim Intuition 2</title>
+		<!-- Bootstrap -->
+		<link href="/static/css/bootstrap.superhero.min.css" rel="stylesheet" media="screen">
+        <!-- JQuery -->
+        <script src="/static/js/jquery.js"></script>
+        <!-- JQuery UI -->
+        <script src="/static/js/jquery-ui.js"></script>
+        <!-- Bootstrap -->
+        <script src="/static/js/bootstrap.js"></script>
+		<!-- NIM Style -->
+		<link href="/static/css/nim.css" rel="stylesheet" media="screen">
+		<!-- NIM Script -->
+		<script src="/static/js/nim.js"></script>
+    </head>
+    <body class="well">
+		<script>
+			function show_result(winner){
+				if(winner == 1){
+					$('#nim-result-win').show()
+					$('#nim-container').hide()
+				} else {
+					$('#nim-result-loose').show()
+					$('#nim-container').hide()
+				}
+			}
+			function init(stacks, container){
+				// Initialize Nim Game
+				$('#nim-result-win').hide()
+				$('#nim-result-loose').hide()
+				$('#nim-container').show()
+				if(stacks == undefined){
+					a = Math.round(Math.random()*2,0)+1;
+					b = Math.round(Math.random()*2,0)+1;
+					if(Math.random() < 0.34){
+						stacks = [a,b,a]
+					}else if(Math.random() < 0.67){
+						stacks = [b,a,a]
+					}else {
+						stacks = [a,a,b]
+					}
+				}
+				if(container == undefined){
+					container = "#nim-container"
+				}
+				opt = {
+					"container" : $(container)[0],
+					"stacks": stacks,
+					"interactive": false,
+					"cb_finished": function(){}
+				}
+				game = new NimGame(opt);
+				$(container).find("#nim-msg").addClass("hidden")
+			}
+			function init_all(){
+				init([1,1,2], '#nim-example-1')
+				init([2,1,2], '#nim-example-2')
+				init([3,3,3], '#nim-example-3')
+			}
+			$(function(){ init_all(); })
+		</script>
+		<p>
+		This shows several example Nim scenarios. The orange rectangles represent stacks of
+		objects. The number of objects on the stack is shown by the white
+		number in the stack. Each example is combined with the description of
+		the optimal move.
+		</p>
+		<div class="panel panel-default">
+			<div class="panel-heading">Scenario 1</div>
+			<div class="panel-body">
+				<div class="row">
+					<div class="col-lg-3 col-md-4 col-sm-6 col-xs-12"
+						id="nim-example-1"></div>
+					<div class="col-lg-9 col-md-8 col-sm-6 col-xs-12"><p>Take two objects from the third stack, which
+					will leave two identical stacks for the opponent. Whichever one he
+					chooses, you will be able to pick the last one.</p></div>
+				</div>
+			</div>
+		</div>
+		<div class="panel panel-default">
+			<div class="panel-heading">Scenario 2</div>
+			<div class="panel-body">
+				<div class="row">
+					<div class="col-lg-3 col-md-4 col-sm-6 col-xs-12"
+						id="nim-example-2"></div>
+					<div class="col-lg-9 col-md-8 col-sm-6 col-xs-12"><p>Take
+						one objects from the second stack, which
+					will leave two identical stacks for the opponent. Whichever one he
+					chooses, you will be able to pick the last one.</p></div>
+				</div>
+			</div>
+		</div>
+		<div class="panel panel-default">
+			<div class="panel-heading">Scenario 3</div>
+			<div class="panel-body">
+				<div class="row">
+					<div class="col-lg-3 col-md-4 col-sm-6 col-xs-12"
+						id="nim-example-3"></div>
+					<div class="col-lg-9 col-md-8 col-sm-6 col-xs-12"><p>Take
+						three objects from any of the stacks, which
+					will leave two identical stacks for the opponent. Whichever one he
+					chooses, you will be able to either pick the last object or
+					to create two identical stacks again.</p></div>
+				</div>
+			</div>
+		</div>
+    </body>
+</html>

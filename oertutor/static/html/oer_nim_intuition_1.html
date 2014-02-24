@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>OER Nim Intuition 1</title>
+		<!-- Bootstrap -->
+		<link href="/static/css/bootstrap.superhero.min.css" rel="stylesheet" media="screen">
+        <!-- JQuery -->
+        <script src="/static/js/jquery.js"></script>
+        <!-- JQuery UI -->
+        <script src="/static/js/jquery-ui.js"></script>
+        <!-- Bootstrap -->
+        <script src="/static/js/bootstrap.js"></script>
+		<!-- NIM Style -->
+		<link href="/static/css/nim.css" rel="stylesheet" media="screen">
+		<!-- NIM Script -->
+		<script src="/static/js/nim.js"></script>
+    </head>
+    <body class="well">
+		<script>
+			function show_result(winner){
+				if(winner == 1){
+					$('#nim-result-win').show()
+					$('#nim-container').hide()
+				} else {
+					$('#nim-result-loose').show()
+					$('#nim-container').hide()
+				}
+			}
+			function init(){
+				// Initialize Nim Game
+				$('#nim-result-win').hide()
+				$('#nim-result-loose').hide()
+				$('#nim-container').show()
+				a = Math.round(Math.random()*2,0)+1;
+				b = Math.round(Math.random()*2,0)+1;
+				if(Math.random() < 0.34){
+					stacks = [a,b,a]
+				}else if(Math.random() < 0.67){
+					stacks = [b,a,a]
+				}else {
+					stacks = [a,a,b]
+				}
+				opt = {
+					"container" : document.getElementById("nim-container"),
+					"stacks": stacks,
+					"cb_finished": function(winner, playback){
+						show_result(winner);
+					}
+				}
+				game = new NimGame(opt);
+				$("#nim-msg").addClass("hidden")
+			}
+			document.body.onload = init;
+		</script>
+		<p>
+			This is a game of Nim. The orange rectangles represent stacks of
+		objects. The number of objects on the stack is shown by the white
+		number in the stack. You can take objects off a stack by clicking on
+		it. You will then be asked how many objects you want to take. After you
+		have made a move, your artificial counter player will make one as well.
+		The game ends when either of you won.
+		</p>
+		<div id="nim-container"></div>
+		<div id="nim-result-win" class='alert alert-success' style='display: none'>
+			<h4>Victory! You've beaten the computer.</h4>
+		<button class='btn btn-default' onclick='init()'>Play again!</button>
+		</div>
+		<div id="nim-result-loose" class='alert alert-danger' style='display: none'>
+			<h4>The computer won. You'll get it next time!</h4>
+		<button class='btn btn-default' onclick='init()'>Play again!</button>
+		</div>
+    </body>
+</html>

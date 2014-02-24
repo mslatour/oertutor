@@ -13,6 +13,9 @@ function NimGame(opt){
 	_s.display_turn = true;
 	_s.display_playback = false;
 
+	// Determine interactive or static
+	_s.interactive = true;
+
     // History of actions
     _s.playback = new Array();
 
@@ -36,7 +39,11 @@ function NimGame(opt){
             }
         }
         _s.init_render();
-        _s.play();
+		if(_s.interactive){
+			_s.play();
+		}else{
+			_s.render(function(){});
+		}
     }
 
     _s.end_turn = function(){
@@ -74,7 +81,7 @@ function NimGame(opt){
             if(_s.stacks[i] != 0) return false
         }
         return true
-    }   
+    }
 
     // Initialize rendering
     _s.init_render = function(){
@@ -82,13 +89,22 @@ function NimGame(opt){
 		var msg = document.createElement("div");
 		msg.id = "nim-msg";
 		// Append msg container to the output container
-		_s.container.appendChild(msg);
+		$(_s.container).append(msg);
 
 		// Create a container for the stacks
         var stackcontainer = document.createElement("div");
         stackcontainer.id = "nim-stack-container";
         stackcontainer.className = "nim stackcontainer";
-        _s.container.appendChild(stackcontainer);
+		max_blocks = 0;
+		for(s = 0; s < _s.stacks.length; s++){
+			if(_s.stacks[s] > max_blocks){
+				max_blocks = _s.stacks[s]
+			}
+		}
+        style = "height: "+(30+max_blocks*20)+"px;"+
+                "width: "+(_s.stacks.length*100)+"px;";
+		stackcontainer.setAttribute("style", style)
+        $(_s.container).append(stackcontainer);
     }
 
     // Render the game state
@@ -96,10 +112,10 @@ function NimGame(opt){
 		if(_s.is_finished()){
 			msg = (winner == 1? "You won!" : "Computer won!")
 			// Display log message
-			document.getElementById("nim-msg").innerHTML = msg;
+			$(_s.container).find("#nim-msg").html(msg);
 			// Clear container for the stacks
-			var stackcontainer = document.getElementById("nim-stack-container");
-			stackcontainer.innerHTML = "";
+			var stackcontainer = $(_s.container).find("#nim-stack-container");
+			stackcontainer.html("")
 			return true;
 		}
 		if( _s.display_playback ){
@@ -111,17 +127,17 @@ function NimGame(opt){
 					" reduced stack "+(p.stack+1)+" with "+p.reduction+"</b><br />" ;
 			}
 			// Display log message
-			document.getElementById("nim-msg").innerHTML = log;
+			$(_s.container).find("#nim-msg").html(log);
 		}
 		if( _s.display_turn ){
 			turn = (_s.turn == 1? "Your turn" : "Computer turn")
 			// Display turn message
-			document.getElementById("nim-msg").innerHTML = turn;
+			$(_s.container).find("#nim-msg").html(turn);
 		}
 
         // Clear container for the stacks
-        var stackcontainer = document.getElementById("nim-stack-container");
-        stackcontainer.innerHTML = "";
+        var stackcontainer = $(_s.container).find("#nim-stack-container");
+        stackcontainer.html("")
 
         var stack, style;
         // Generate the stacks
@@ -129,11 +145,13 @@ function NimGame(opt){
             stack = document.createElement("div");
             if(_s.stacks[i] == 0){
                 stack.className= "nim stack empty";
+			}else if(!_s.interactive){
+                stack.className= "nim stack static";
             }else{
                 stack.className= "nim stack";
             }
             style = "height: "+(20+_s.stacks[i]*20)+"px;"+
-                "left: "+(10+50*i)+"px;";
+                "left: "+(10+100*i)+"px;";
             stack.setAttribute("style", style);
             if(_s.stacks[i] > 0 && clickcb != undefined){
                 // Create onclick action for stack.
@@ -147,7 +165,7 @@ function NimGame(opt){
             }
             stack.innerHTML = _s.stacks[i];
             // Add stack to stack container
-            stackcontainer.appendChild(stack);
+            stackcontainer.append(stack);
         }
     }
 
