@@ -31,7 +31,10 @@ def init_population(num, population=None, genes=None):
       The created or used population
     """
     if genes is None:
-        genes = Gene.objects.all()
+        if population is not None:
+            genes = population.pool
+        else:
+            genes = Gene.objects.all()
     individuals = []
     # Mapping to lookup chromosomes by its gene member
     chromosomes_gene_map = {}
@@ -120,7 +123,8 @@ def switch_generations(num_pop, num_elite, p_mutate, population, DEBUG=0x0):
         parents = survivors[2*index:2*(index+1)]
         debug("Parents selected: %s" % (parents,), DEBUG & DEBUG_VALUE)
         try:
-            offspring += crossover(parents[0].chromosome, parents[1].chromosome)
+            offspring += crossover(parents[0].chromosome,
+                    parents[1].chromosome, population)
         except ImpossibleException:
             # If no children can be created, just keep the parents
             offspring += [p.chromosome for p in parents]
@@ -133,7 +137,8 @@ def switch_generations(num_pop, num_elite, p_mutate, population, DEBUG=0x0):
     for member in offspring:
         if random.random() >= p_mutate:
             try:
-                nxt_generation.append(Individual.factory(mutate(member)))
+                nxt_generation.append(Individual.factory(mutate(member,
+                    population)))
                 debug("Mutate %s" % (member,), DEBUG & DEBUG_STEP)
             except ImpossibleException:
                 nxt_generation.append(Individual.factory(member))
@@ -149,12 +154,12 @@ def test_validity(chromosome):
         and len(chromosome) >= MIN_LEN
         and len(chromosome) <= MAX_LEN)
 
-def mutate(chromosome):
+def mutate(chromosome, population):
     functions = [mutate_swap, mutate_add, mutate_delete]
     while functions != []:
         func = random.choice(functions)
         try:
-            mutation = func(chromosome)
+            mutation = func(chromosome, population)
         except ImpossibleException:
             functions.remove(func)
         else:
@@ -170,7 +175,7 @@ def mutate(chromosome):
                 return chromosome
     raise ImpossibleException
 
-def mutate_swap(chromosome):
+def mutate_swap(chromosome, population):
     """
     Perform a swap mutation on the chromosome by randomly selecting two
     distinct positions in the chromosome. The genes on the two positions in
@@ -206,7 +211,7 @@ def mutate_swap(chromosome):
     genes[j] = chromosome[i]
     return genes
 
-def mutate_add(chromosome):
+def mutate_add(chromosome, population):
     """
     Perform an add mutation to the chromosome by adding a new gene to the
     chromosome from the pool. Genes in the chromosome are unique.
@@ -224,9 +229,10 @@ def mutate_add(chromosome):
     """
     # Collect the primary keys of the genes already present
     exclude = [gene.pk for gene in chromosome]
+    # Fetch population
     try:
         # Select a random gene that is not already present
-        gene = Gene.random_choice(exclude)
+        gene = population.random_pool_choice(exclude)
     except ValueError:
         raise ImpossibleException
     else:
@@ -239,7 +245,7 @@ def mutate_add(chromosome):
         else:
             raise ImpossibleException
 
-def mutate_delete(chromosome):
+def mutate_delete(chromosome, population):
     """
     Perform a delete mutation to the chromosome by removing a random gene from
     the chromosome.
@@ -264,14 +270,14 @@ def mutate_delete(chromosome):
     else:
         raise ImpossibleException
 
-def crossover(parent1, parent2):
+def crossover(parent1, parent2, population):
     """
     Crossover wrapper function that picks the crossover operation.
     """
     functions = [one_point_crossover, append_crossover]
     for func in functions:
         try:
-            childs = func(parent1, parent2)
+            childs = func(parent1, parent2, population)
         except ImpossibleException:
             continue
         else:
@@ -299,7 +305,7 @@ def crossover(parent1, parent2):
             return chromosomes
     raise ImpossibleException
 
-def append_crossover(parent1, parent2):
+def append_crossover(parent1, parent2, population):
     """
     Perform an append crossover by appending the genes of both parents in the
     two possible ordernings. The resulting childs are checked by test_validity.
@@ -325,7 +331,7 @@ def append_crossover(parent1, parent2):
     else:
         raise ImpossibleException
 
-def one_point_crossover(parent1, parent2):
+def one_point_crossover(parent1, parent2, population):
     """
     Perform a one point crossover operation for two parents that could differ
     in length. Because of that, a different point is chosen in each parent that

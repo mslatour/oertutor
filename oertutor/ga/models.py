@@ -700,6 +700,7 @@ class Generation(models.Model):#{{{
 #}}}
 
 class Population(models.Model):#{{{
+    pool = models.ManyToManyField('Gene', null=True, related_name='+')
 
     @staticmethod
     def factory(individuals):
@@ -710,6 +711,38 @@ class Population(models.Model):#{{{
         population = Population.objects.create()
         generation = Generation.factory(individuals, population)
         return population
+
+    def random_pool_choice(self, exclude=None):
+        """
+        Select a random Gene instance from the pool.
+        Possibly after excluding a list of genes by their primary keys.
+
+        Arguments:
+          exclude - List of primary keys. Default: None.
+
+        Raises:
+          ValueError if there are no genes, or all genes are excluded.
+
+        Returns:
+          A randomly selected gene instance
+        """
+        if exclude is not None:
+            genes = self.pool.exclude(pk__in=exclude)
+        else:
+            genes = self.pool.all()
+        # There must be genes left to choose
+        if len(genes) == 0:
+            raise ValueError("No genes left to choose from.")
+        return random.choice(genes)
+
+    def __str__(self):
+        return self.__repr__()
+
+    def __unicode__(self):
+        return self.__repr__()
+
+    def __repr__(self):
+        return "<%s: %s>" % (self.__class__.__name__, self.pk)#}}}
 
     def current_generation(self):
         """
