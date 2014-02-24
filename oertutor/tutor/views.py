@@ -22,10 +22,16 @@ def tutor(request):
     curriculum = select_curriculum(request)
     kcs = KnowledgeComponent.objects.filter(curriculum=curriculum)
     trial = select_trial(student, curriculum)
+    if trial is not None:
+        location = list(kcs).index(trial.kc)
+        progress = int(round((float(location+1)/(len(kcs)+2))*100))
+    else:
+        progress = None
     if student.phase == Student.NEW:
         return render(request, 'new.html', {
             'kcs':kcs,
             'selected_kc': "start",
+            'progress': progress,
             'curriculum':curriculum,
         })
     elif student.phase == Student.INTRO:
@@ -34,6 +40,7 @@ def tutor(request):
             return render(request, 'intro.html', {
                 'kcs':kcs,
                 'selected_kc':kc.id if kc is not None else 0,
+                'progress': progress,
                 'title': kc.title,
                 'description': kc.description,
                 'curriculum':curriculum
@@ -44,6 +51,7 @@ def tutor(request):
             return render(request, 'skip.html', {
                 'kcs':kcs,
                 'selected_kc':kc.id if kc is not None else 0,
+                'progress': progress,
                 'curriculum':curriculum
             })
     elif student.phase == Student.PRETEST:
@@ -52,6 +60,7 @@ def tutor(request):
             return render(request, 'test.html', {
                 'kcs':kcs,
                 'selected_kc':kc.id if kc is not None else 0,
+                'progress': progress,
                 'curriculum':curriculum,
                 'test': kc.pretest,
                 'questions': kc.pretest.questions.all()
@@ -65,6 +74,7 @@ def tutor(request):
             return render(request, 'resource.html', {
                 'kcs':kcs,
                 'selected_kc':kc.id if kc is not None else 0,
+                'progress': progress,
                 'curriculum': curriculum,
                 'resource': trial.sequence[trial.sequence_position].resource
             })
@@ -74,6 +84,7 @@ def tutor(request):
             return render(request, 'test.html', {
                 'kcs':kcs,
                 'selected_kc':kc.id if kc is not None else 0,
+                'progress': progress,
                 'curriculum':curriculum,
                 'test': kc.posttest,
                 'questions': kc.posttest.questions.all()
@@ -82,6 +93,7 @@ def tutor(request):
         return render(request, 'done.html', {
             'kcs':kcs,
             'selected_kc': "end",
+            'progress': progress,
             'curriculum':curriculum,
         })
 

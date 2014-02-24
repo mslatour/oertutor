@@ -34,32 +34,39 @@
 			<div class='row'>
 				<div class="col-lg-12"><h3>{{ curriculum.title }}</h3></div>
 			</div>
-			<div class='row well well-sm'>
-				<div class="pagination" style="margin: auto;">
-					{% if selected_kc == "start" %}
-					<li class='active'>
-					{% else %}
-					<li class='disabled'>
+			<div class='row'>
+				<div class="col-lg-12 well well-sm hidden-sm hidden-xs">
+					<div class="pagination" style="margin: auto;">
+						{% if selected_kc == "start" %}
+						<li class='active'>
+						{% else %}
+						<li class='disabled'>
+						{% endif %}
+							<a><h2>Start</h2></a>
+						</li>
+					{% for kc in kcs %}
+						{% if kc.id == selected_kc %}
+						<li class="active">
+						{% else %}
+						<li class="disabled">
+						{% endif %}
+						<a>
+							<h2>Step {{ forloop.counter }}</h2>
+						</a></li>
+					{% endfor %}
+						{% if selected_kc == "end" %}
+						<li class='active'>
+						{% else %}
+						<li class='disabled'>
+						{% endif %}
+							<a><h2>End</h2></a>
+						</li>
+					</div>
+				</div>
+				<div class="progress hidden-md hidden-lg">
+					{% if progress %}
+						<div class="progress-bar" style="width: {{ progress }}%"></div>
 					{% endif %}
-						<a><h1>Start</h1></a>
-					</li>
-				{% for kc in kcs %}
-					{% if kc.id == selected_kc %}
-					<li class="active">
-					{% else %}
-					<li class="disabled">
-					{% endif %}
-					<a><div class="col">
-						<h1>Step {{ forloop.counter }}</h1>
-					</div></a></li>
-				{% endfor %}
-					{% if selected_kc == "end" %}
-					<li class='active'>
-					{% else %}
-					<li class='disabled'>
-					{% endif %}
-						<a><h1>End</h1></a>
-					</li>
 				</div>
 			</div>
 			<div class="row">
