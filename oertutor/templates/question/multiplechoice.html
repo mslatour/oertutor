@@ -1,5 +1,5 @@
 <div class='form-group'>
-	<label for="{{q.handle}}"><h3>{{q.question}}</h3></label>
+	<label for="{{q.handle}}"><h4>{{q.question}}</h4></label>
     <select name="{{q.handle}}" class='form-control'>
         <option value="">-- Select option --</option>
     {% for answer in q.multiplechoicequestion.answers.all %}

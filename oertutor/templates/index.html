@@ -27,7 +27,7 @@
         {% block headinclude %}{% endblock %}
     </head>
     <body>
-		<div class="container">
+		<div class="container-fluid">
 		<div class="row">
 			<div class="col-lg-1 col-md-0 col-sm-0"></div>
 			<div class="col-lg-10 col-md-12 col-sm-12"><div>
@@ -51,8 +51,6 @@
 					{% endif %}
 					<a><div class="col">
 						<h1>Step {{ forloop.counter }}</h1>
-						<!--<strong>{{ kc.title }}</strong>
-						<p>{{ kc.description }}</p>-->
 					</div></a></li>
 				{% endfor %}
 					{% if selected_kc == "end" %}

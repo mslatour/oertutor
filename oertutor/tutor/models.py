@@ -183,11 +183,11 @@ class MultipleChoiceQuestion(Question):
         super(MultipleChoiceQuestion, self).__init__(*args, **kwargs)
 
     @staticmethod
-    def factory(answer_dict={}, **kwargs):
+    def factory(answer_list={}, **kwargs):
         q, created = MultipleChoiceQuestion.objects.get_or_create(**kwargs)
-        for handle in answer_dict:
-            q.answers.add(Answer.objects.create(handle=handle,
-                body=answer_dict[handle]))
+        for answer in answer_list:
+            q.answers.add(Answer.objects.create(handle=answer[0],
+                body=answer[1]))
         q.save()
         return q
 

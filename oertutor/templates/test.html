@@ -8,7 +8,14 @@
         <fieldset>
 			<legend><h2>{{ test.title }}</h2></legend>
             {% for q in questions %}
-                {% include q.template with q=q %}
+				<div class="panel panel-default">
+					<div class="panel-heading">
+						Question {{ forloop.counter }}
+					</div>
+					<div class="panel-body">
+						{% include q.template with q=q %}
+					</div>
+				</div>
             {% endfor %}
         </fieldset>
         <button type='submit' class='btn btn-primary btn-lg'>Submit answers</button>

@@ -16,9 +16,9 @@ def load_db():
             handle='q2',
             question="Question2",
             answer="Answer2",
-            answer_dict={
-                'Answer1': 'The wrong answer',
-                'Answer2': 'The right answer'})
+            answer_list=(
+                ('Answer1', 'The wrong answer'),
+                ('Answer2', 'The right answer')))
     test.questions.add(q1)
     test.questions.add(q2)
     test.save()
@@ -34,35 +34,37 @@ def load_db():
         handle='q1',
         question="Can you take objects from more than one stack",
         answer="no2",
-        answer_dict={
-            "null": "I have no idea.",
-            "no1": "No, you can only take one object at a time",
-            "no2": "No, you can only take objects from a single stack",
-            "yes1": "Yes, you are allowed to do that",
-            "yes2": "Yes, but only if there are not enough objects on one stack"
-            }))
+        template="question/radio-vertical.html",
+        answer_list=(
+            ("null", "I have no idea."),
+            ("no1", "No, you can only take one object at a time"),
+            ("no2", "No, you can only take objects from a single stack"),
+            ("yes1", "Yes, you are allowed to do that"),
+            ("yes2", "Yes, but only if there are not enough objects on one "+\
+                    "stack"))))
     test1.questions.add(MultipleChoiceQuestion.factory(
         handle='q2',
         question="Bob and John are playing the normal version of a Nim game."+\
                 " John takes the last object on table. Who won?",
         answer="john",
-        answer_dict={
-            "null": "I have no idea.",
-            "bob": "Bob won",
-            "john": "John won",
-            "nobody": "Nobody won yet",
-            "depends": "That depens on whether it was John's second turn"
-            }))
+        template="question/radio-vertical.html",
+        answer_list=(
+            ("null", "I have no idea."),
+            ("bob", "Bob won"),
+            ("john", "John won"),
+            ("nobody", "Nobody won yet"),
+            ("depends", "That depens on whether it was John's second turn"))))
     test1.questions.add(MultipleChoiceQuestion.factory(
         handle='q3',
         question="How many objects are you allowed to take away from a stack",
         answer="min1",
-        answer_dict={
-            "null": "I have no idea.",
-            "exact1": "Exactly one object.",
-            "all": "You have to take all the objects of that stack that you chose.",
-            "min1": "You have to take at least one object."
-            }))
+        template="question/radio-vertical.html",
+        answer_list=(
+            ("null", "I have no idea."),
+            ("exact1", "Exactly one object."),
+            ("all", "You have to take all the objects of that stack that you"+\
+                " chose."),
+            ("min1", "You have to take at least one object."))))
     test1.save()
     kcs['rules'], created = KnowledgeComponent.objects.get_or_create(
         title = "Rules of the game",
@@ -84,36 +86,36 @@ def load_db():
         the second stack has two objects and the third stack has one object.\
         What is the best move to make?",
         answer="1from2",
-        answer_dict={
-            "null": "I have no idea.",
-            "1from2": "Take one object from the second stack",
-            "2from2": "Take two objects from the second stack",
-            "1from3": "Take one object from the third stack",
-            }))
+        template="question/radio-vertical.html",
+        answer_list=(
+            ("null", "I have no idea."),
+            ("1from2", "Take one object from the second stack"),
+            ("2from2", "Take two objects from the second stack"),
+            ("1from3", "Take one object from the third stack"))))
     test2.questions.add(MultipleChoiceQuestion.factory(
         handle='q2',
         question="On the table are three stacks. The first stack has two\
         objects. The second stack has two objects. The third stack has one object.\
         What is the best move to make?",
         answer="1from3",
-        answer_dict={
-            "null": "I have no idea.",
-            "1from1": "Take one object from the first stack",
-            "2from1": "Take two objects from the first stack",
-            "1from2": "Take one object from the second stack",
-            "2from2": "Take two objects from the second stack",
-            "1from3": "Take one object from the third stack",
-            }))
+        template="question/radio-vertical.html",
+        answer_list=(
+            ("null", "I have no idea."),
+            ("1from1", "Take one object from the first stack"),
+            ("2from1", "Take two objects from the first stack"),
+            ("1from2", "Take one object from the second stack"),
+            ("2from2", "Take two objects from the second stack"),
+            ("1from3", "Take one object from the third stack"))))
     test2.questions.add(MultipleChoiceQuestion.factory(
         handle='q3',
         question="On the table are three stacks. All stacks have two objects.\
         What is the best move to make?",
         answer="2fromany",
-        answer_dict={
-            "null": "I have no idea.",
-            "1fromany": "Take one object from the any single stack",
-            "2fromany": "Take two objects from the any single stack",
-            }))
+        template="question/radio-vertical.html",
+        answer_list=(
+            ("null", "I have no idea."),
+            ("1fromany", "Take one object from the any single stack"),
+            ("2fromany", "Take two objects from the any single stack"))))
     test2.save()
     kcs['intuition'], created = KnowledgeComponent.objects.get_or_create(
         title = "Intuition",
