@@ -178,6 +178,8 @@ def observation(request):
         return HttpResponseBadRequest()
 
 def load(request):
+    from oertutor.curricula.nim import load_db
+    load_db()
     categories = StudentCategory.objects.all()
     for category in categories:
         kc = category.kc
