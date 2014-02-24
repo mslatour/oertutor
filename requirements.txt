@@ -7,3 +7,4 @@ djangorestframework==2.1.17
 requests==1.1.0
 wsgiref==0.1.2
 pytz==2012c
+psycopg2==2.5
