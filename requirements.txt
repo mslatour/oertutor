@@ -3,7 +3,6 @@ MySQL-python==1.2.4
 argparse==1.2.1
 distribute==0.6.38
 dj-database-url==0.2.1
-django-concurrency==0.5b1
 djangorestframework==2.1.17
 requests==1.1.0
 wsgiref==0.1.2
