@@ -1,8 +1,8 @@
 from oertutor.ga.models import *
 from oertutor.ga import algorithm as galg
 
-MAX_EPISODES = 10;
-NUM_POP = 10;
+MAX_EPISODES = 4;
+NUM_POP = 4;
 NUM_ELITE = 2;
 P_MUTATE = 0.05;
 
@@ -31,7 +31,5 @@ def request_sequence(population):
         galg.switch_generations(NUM_POP, NUM_ELITE, P_MUTATE, population)
         return request_sequence(population)
 
-def store_evaluation(sequence_id, generation_id, evaluation):
-    individual = Individual.objects.get(pk=sequence_id)
-    generation = Generation.objects.get(pk=generation_id)
-    Evaluation.factory(generation, individual, evaluation)
+def store_evaluation(individual, population, evaluation):
+    Evaluation.factory(population.current_generation(), individual, evaluation)

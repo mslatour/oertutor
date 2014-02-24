@@ -6,6 +6,7 @@ from rest_framework import permissions
 from django.shortcuts import render
 from django.http import HttpResponse, HttpResponseBadRequest, \
     HttpResponseRedirect
+from decimal import Decimal
 from oertutor.ga.web import *
 from oertutor.tutor.helpers import select_trial, grade_test
 from oertutor.helpers import select_curriculum
@@ -38,11 +39,13 @@ def tutor(request):
                 'curriculum':curriculum
             })
     elif student.phase == Student.SKIP:
-        return render(request, 'skip.html', {
-            'kcs':kcs,
-            'selected_kc': 0,
-            'curriculum':curriculum
-        })
+        if trial is not None:
+            kc = trial.kc
+            return render(request, 'skip.html', {
+                'kcs':kcs,
+                'selected_kc':kc.id if kc is not None else 0,
+                'curriculum':curriculum
+            })
     elif student.phase == Student.PRETEST:
         if trial is not None:
             kc = trial.kc
@@ -89,81 +92,76 @@ def next_step(request):
     if request.method == "POST":
         if student.phase == Student.PRETEST:
             if trial is not None:
-                print "store pretest",trial.kc.pretest
                 result = grade_test(request, student, trial.kc.pretest)
                 trial.pretest_result = result
-                trial.category = determine_student_category(trial.kc, student)
                 if result.score == 1:
-                    trial.posttest_result = result
                     student.phase = Student.SKIP
                 else:
+                    trial.category = determine_student_category(trial.kc,
+                        result.score, student)
                     student.phase = Student.SEQUENCE
                 trial.save()
                 student.save()
             return HttpResponseRedirect('/tutor/')
         elif student.phase == Student.POSTTEST:
             if trial is not None:
-                print "store posttest", trial.kc.posttest
                 result = grade_test(request, student, trial.kc.posttest)
                 trial.posttest_result=result
                 trial.save()
-                print "calculate normalized learning gain"
+                postscore = Decimal(result.score)
+                prescore = Decimal(trial.pretest_result.score)
+                nlg = (postscore-prescore) / (Decimal(1)-prescore)
+                store_evaluation(trial.sequence, trial.category, nlg)
                 next_trial = select_trial(student)
                 if next_trial is not None:
                     student.phase = Student.INTRO
                     student.save()
-                    print "present KC:", next_trial.kc
                     return HttpResponseRedirect('/tutor/')
                 else:
-                    print "move student to done"
                     student.phase = Student.DONE
                     student.save()
                     return HttpResponseRedirect('/tutor')
     elif request.method == "GET":
         if student.phase == Student.NEW:
-            print "Send student to first KC"
             if trial is not None:
                 next_kc = trial.kc
                 student.phase = Student.INTRO
                 student.save()
-                print "present KC:", next_kc
                 return HttpResponseRedirect('/tutor/')
         elif student.phase == Student.INTRO:
             student.phase = Student.PRETEST
             student.save()
-            print "Send student to pre test"
             return HttpResponseRedirect('/tutor')
         elif student.phase == Student.SKIP:
             if trial is not None:
-                student.phase = Student.INTRO
-                student.save()
-                print "present KC:", trial.kc
-                return HttpResponseRedirect('/tutor/')
-            else:
-                print "move student to done"
-                student.phase = Student.DONE
-                student.save()
-                return HttpResponseRedirect('/tutor')
+                trial.posttest_result = trial.pretest_result
+                trial.save()
+                next_trial = select_trial(student)
+                if next_trial is not None:
+                    student.phase = Student.INTRO
+                    student.save()
+                    return HttpResponseRedirect('/tutor/')
+                else:
+                    student.phase = Student.DONE
+                    student.save()
+                    return HttpResponseRedirect('/tutor')
         elif student.phase == Student.SEQUENCE:
             if trial is not None:
                 if (trial.sequence_position+1) < len(trial.sequence):
-                    trial.sequence.position += 1
+                    trial.sequence_position += 1
                     trial.save()
                 else:
                     student.phase = Student.POSTTEST
                     student.save()
-                    print "Send student to post test"
                 return HttpResponseRedirect('/tutor')
     return HttpResponseRedirect('/tutor')
 
 
-def determine_student_category(kc, student):
-    return StudentCategory.objects.filter(kc=kc)[0]
-
-def tutor_sequence(kc, student):
-    category = determine_student_category(kc, student)
-    sequence = request_sequence(category)
-    return sequence
+def determine_student_category(kc, score, student):
+    cat = StudentCategory.objects.filter(kc=kc, lower_score__lte=score,
+            upper_score__gt=score)[0]
+    print "Student category", cat
+    return cat
 
 def observation(request):
     student = Student.by_session(request.session)

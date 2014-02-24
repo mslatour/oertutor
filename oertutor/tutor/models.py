@@ -73,6 +73,8 @@ class KnowledgeComponent(models.Model):
 class StudentCategory(Population):
     title = models.CharField(max_length=50)
     kc = models.ForeignKey('KnowledgeComponent', related_name='+')
+    lower_score = models.DecimalField(default=0.0, max_digits=4, decimal_places=2)
+    upper_score = models.DecimalField(default=1.0, max_digits=4, decimal_places=2)
 
     def __unicode__(self):
         return str(self)
@@ -107,6 +109,14 @@ class Resource(Gene):
     title = models.CharField(max_length=50)
     source = models.URLField()
     kc = models.ForeignKey(KnowledgeComponent, related_name='resources')
+
+    @staticmethod
+    def factory(kc, **kwargs):
+        resource, created = Resource.objects.get_or_create(kc=kc, **kwargs)
+        for category in StudentCategory.objects.filter(kc=kc):
+            category.pool.add(resource)
+            category.save()
+        return resource
 
     def __unicode__(self):
         return str(self)
