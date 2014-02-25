@@ -259,6 +259,12 @@ def load_db():
     )
 
     Resource.factory(
+        title = "Showing a basic strategy",
+        source = "/static/html/oer_nim_intuition_4.html",
+        kc = kcs['intuition']
+    )
+
+    Resource.factory(
         title = "Learn about binary numbers",
         source = "/static/html/oer_nim_binary_1.html",
         kc = kcs['binary']
