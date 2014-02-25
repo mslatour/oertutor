@@ -129,10 +129,46 @@ def load_db():
     StudentCategory.objects.get_or_create(title="Intuition High", kc=kcs['intuition'],
             lower_score=0.5)
 
+    # KC: Binary numbers
+    test3 = Test.objects.create(title="What do you know about binary numbers?")
+    test3.questions.add(MultipleChoiceQuestion.factory(
+        handle='q1',
+        question="What is the binary representation of the decimal number 10?",
+        answer="1010",
+        template="question/radio-vertical.html",
+        answer_list=(
+            ("null", "I have no idea."),
+            ("0010", "0010"),
+            ("1000", "1000"),
+            ("1010", "1010"),
+            ("1111111111", "1111111111"),
+            ("0000000010", "0000000010"))))
+    test3.questions.add(MultipleChoiceQuestion.factory(
+        handle='q2',
+        question="What is the decimal representation of the binary number 1000",
+        answer="8",
+        template="question/radio-vertical.html",
+        answer_list=(
+            ("null", "I have no idea."),
+            ("1", "1"),
+            ("4", "4"),
+            ("8", "8"),
+            ("1000","1000"))))
+    test3.questions.add(MultipleChoiceQuestion.factory(
+        handle='q3',
+        question="Which number is bigger, the binary number 1001 or the decimal number 1001?",
+        answer="dec",
+        template="question/radio-vertical.html",
+        answer_list=(
+            ("null", "I have no idea."),
+            ("bin", "The binary number is bigger."),
+            ("dec", "The decimal number is bigger."),
+            ("eq", "They are equal."))))
+    test3.save()
     kcs['binary'], created = KnowledgeComponent.objects.get_or_create(
         title = "Binary numbers",
-        pretest = test,
-        posttest = test,
+        pretest = test3,
+        posttest = test3,
         description = "What are binary numbers?",
         curriculum = curr
     )
@@ -152,7 +188,7 @@ def load_db():
             kc=kcs['cancel2powers'], upper_score=0.5)
     StudentCategory.objects.get_or_create(title="Cancel2Powers High",
             kc=kcs['cancel2powers'], lower_score=0.5)
-
+    """
     kcs['nimsum'], created = KnowledgeComponent.objects.get_or_create(
         title = "Nim-sum",
         pretest = test,
@@ -164,7 +200,7 @@ def load_db():
             upper_score=0.5)
     StudentCategory.objects.get_or_create(title="Nimsum High", kc=kcs['nimsum'],
             lower_score=0.5)
-
+    """
     # Save knowledge components
     for kc in kcs:
         kcs[kc].save()
@@ -173,7 +209,7 @@ def load_db():
     kcs['intuition'].antecedents.add(kcs['rules'])
     kcs['binary'].antecedents.add(kcs['intuition'])
     kcs['cancel2powers'].antecedents.add(kcs['binary'])
-    kcs['nimsum'].antecedents.add(kcs['cancel2powers'])
+#    kcs['nimsum'].antecedents.add(kcs['cancel2powers'])
 
     # Save structure
     for kc in kcs:
@@ -223,13 +259,32 @@ def load_db():
     )
 
     Resource.factory(
+        title = "Learn about binary numbers",
+        source = "/static/html/oer_nim_binary_1.html",
+        kc = kcs['binary']
+    )
+
+    Resource.factory(
+        title = "Examples of binary numbers",
+        source = "/static/html/oer_nim_binary_2.html",
+        kc = kcs['binary']
+    )
+
+    Resource.factory(
+        title = "Binary numbers made easy",
+        source = "/static/html/oer_nim_binary_3.html",
+        kc = kcs['binary']
+    )
+
+    Resource.factory(
+        title = "Definition of binary numbers",
+        source = "/static/html/oer_nim_binary_4.html",
+        kc = kcs['binary']
+    )
+
+    Resource.factory(
         title = "Example of pair canceling",
         source = "/static/html/oer3.html",
         kc = kcs['cancel2powers']
     )
 
-    Resource.factory(
-        title = "Learn about binary numbers",
-        source = "/static/html/oer6.html",
-        kc = kcs['binary']
-    )
