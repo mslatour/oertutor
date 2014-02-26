@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>OER Nim XOR 1</title>
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<link href="/static/css/bootstrap.superhero.min.css" rel="stylesheet" media="screen">
+    </head>
+    <body class="well">
+	<p>
+   The key to the theory of the game is the binary digital sum of the heap sizes, that is, the sum (in binary) neglecting all carries from one digit to another. This operation is also known as "exclusive or" (xor) or "vector addition over GF(2)". Within combinatorial game theory it is usually called the nim-sum, as will be done here. The nim-sum of x and y is written x &#8853; y to distinguish it from the ordinary sum, x + y. An example of the calculation with heaps of size 3, 4, and 5 is as follows:
+   </p>
+   <table class="table table-striped table-hover" style="max-width: 500px">
+	   <thead>
+		   <th>Binary</th><th>Decimal</th><th></th>
+		</thead>
+		<tbody>
+			<tr>
+				<td>011<sub>2</sub></td><td>3<sub>10</sub></td><td>Heap A</td>
+			</tr>
+			<tr>
+				<td>100<sub>2</sub></td><td>4<sub>10</sub></td><td>Heap B</td>
+			</tr>
+			<tr>
+				<td>101<sub>2</sub></td><td>5<sub>10</sub></td><td>Heap C</td>
+			</tr>
+			<tr>
+				<td>---</td><td></td><td></td>
+			</tr>
+			<tr>
+				<td>010<sub>2</sub></td><td>2<sub>10</sub></td><td>The nim-sum of heaps A, B, and C, 3 &#8853; 4 &#8853; 5 = 2</td>
+			</tr>
+		</tbody>
+	</table>
+	<p>
+	In normal play, the winning strategy is to finish every move with a Nim-sum of
+	0. This is always possible if the Nim-sum is not zero before the move. If the
+	Nim-sum is zero, then the next player will lose if the other player does not
+	make a mistake. To find out which move to make, let X be the Nim-sum of all the
+	heap sizes. Take the Nim-sum of each of the heap sizes with X, and find a heap
+	whose size decreases. The winning strategy is to play in such a heap, reducing
+	that heap to the Nim-sum of its original size with X. In the example above,
+	taking the Nim-sum of the sizes is X = 3 &#8853; 4 &#8853; 5 = 2. The Nim-sums
+	of the heap sizes A=3, B=4, and C=5 with X=2 are
+	</p>
+	<table class="table table-striped table-hover" style="max-width: 500px">
+		<tr>
+			<td>A &#8853; X</td><td>=</td><td>3 &#8853; 2</td><td>=</td><td>1
+				[Since (011) &#8853; (010) = 001 ]</td>
+		</tr>
+		<tr>
+			<td>B &#8853; X</td><td>=</td><td>4 &#8853; 2</td><td>=</td><td>6</td>
+		</tr>
+		<tr>
+			<td>C &#8853; X</td><td>=</td><td>5 &#8853; 2</td><td>=</td><td>7</td>
+		</tr>
+	</table>
+	<p>
+	The only heap that is reduced is heap A, so the winning move is to reduce the size of heap A to 1 (by removing two objects).
+	</p>
+	</body>
+</html>
