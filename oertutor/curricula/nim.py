@@ -1,27 +1,36 @@
 from oertutor.tutor.models import *
 
 def load_db():
+    # Create final exam
+    exam = Test.objects.create(title="Game", template="nim_game_exam.html")
+    exam.questions.add(NimQuestion.factory(
+        handle='g1',
+        question='[1,2]',
+        answer='[1]1:1,[-1]0:1,[1]1:1'))
+    exam.questions.add(NimQuestion.factory(
+        handle='g2',
+        question='[2,3,2]',
+        answer='[1]1:3,[-1]0:1,[1]2:1,[-1]0:1,[1]2:1'))
+    exam.questions.add(NimQuestion.factory(
+        handle='g3',
+        question='[4,5,6]',
+        answer='[1]1:3,[-1]0:4,[1]2:4,[-1]1:1,[1]2:1,[-1]1:1,[1]2:1 '))
+    exam.questions.add(NimQuestion.factory(
+        handle='g4',
+        question='[1,3,4,5]',
+        answer='[1]1:3,[-1]0:1,[1]3:1,[-1]2:3,[1]3:3,[-1]2:1,[1]3:1 '))
+    exam.questions.add(NimQuestion.factory(
+        handle='g5',
+        question='[10,4,6,9]',
+        answer='[1]3:1,[-1]0:9,[1]3:5,[-1]0:1,[1]3:1,[-1]1:4,[1]2:4,[-1]2:1,[1]3:1,[-1]2:1,[1]3:1'))
+    exam.save()
     # Register curriculum
     curr, created = Curriculum.objects.get_or_create(
         title = "Become the Master of Nim",
         description = "In this topic you will learn everything that you need" +
-            " to be a champion at the game NIM"
+            " to be a champion at the game NIM",
+        exam = exam
     )
-
-    # Test
-    test, created = Test.objects.get_or_create(title='Generic test')
-    q1 = Question.factory(handle='q1',
-        question="Question1", answer="Answer1")
-    q2 = MultipleChoiceQuestion.factory(
-            handle='q2',
-            question="Question2",
-            answer="Answer2",
-            answer_list=(
-                ('Answer1', 'The wrong answer'),
-                ('Answer2', 'The right answer')))
-    test.questions.add(q1)
-    test.questions.add(q2)
-    test.save()
 
     ########################
     # Knowledge Components #

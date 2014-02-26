@@ -36,6 +36,15 @@
 							<h2>Step {{ forloop.counter }}</h2>
 						</a></li>
 					{% endfor %}
+						{% if curriculum.exam %}
+                            {% if selected_kc == "exam" %}
+                            <li class='active'>
+                            {% else %}
+                            <li class='disabled'>
+                            {% endif %}
+                                <a><h2>{{curriculum.exam.title}}</h2></a>
+                            </li>
+                        {% endif %}
 						{% if selected_kc == "end" %}
 						<li class='active'>
 						{% else %}

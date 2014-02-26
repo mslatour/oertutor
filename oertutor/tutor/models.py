@@ -9,6 +9,7 @@ class Student(models.Model):
     SEQUENCE = 'seq'
     POSTTEST = 'post'
     SKIP = 'skip'
+    EXAM = 'exam'
     DONE = 'done'
     PHASES = (
         (NEW, 'New'),
@@ -17,6 +18,7 @@ class Student(models.Model):
         (SEQUENCE, 'Sequence'),
         (POSTTEST, 'Post-test'),
         (SKIP, 'Skipped'),
+        (EXAM, 'Final exam'),
         (DONE, 'Done')
     )
     phase = models.CharField(max_length=4, choices=PHASES, default=NEW)
@@ -36,9 +38,20 @@ class Student(models.Model):
             session['student'] = student.pk
             return student
 
+    def __unicode__(self):
+        return str(self)
+
+    def __str__(self):
+        return "Student [%s] %s" % (self.phase, self.started)
+
+    def __repr__(self):
+        return "Student[%s]" % (self.phase,)
+
+
 class Curriculum(models.Model):
     title = models.CharField(max_length=50)
     description = models.TextField()
+    exam = models.ForeignKey('Test', related_name='+', null=True)
 
     def __unicode__(self):
         return str(self)
@@ -142,7 +155,30 @@ class Observation(models.Model):
 
 class Test(models.Model):
     title = models.CharField(max_length=255)
-    questions = models.ManyToManyField('Question', related_name='test')
+    template = models.CharField(max_length=255, null=True, blank=True)
+    questions = models.ManyToManyField('Question', related_name='test',
+            null=True, blank=True)
+
+    def grade(self, answers, student):
+        score = 0.0
+        weights = 0
+        result = TestResult.objects.create(test=self, student=student)
+        for question in self.questions.all():
+            print "grading",question.id
+            weights += question.weight
+            answer = answers.get(question.handle, "")
+            StudentAnswer.objects.create(question=question, testresult=result,
+                student=student, answer=answer)
+            if question.downcast().correct(answer):
+                print "correct!"
+                score += question.weight
+        print "weights",weights
+        print "unnormalized score",score
+        score /= weights
+        print "normalized score",score
+        result.score = score
+        result.save()
+        return result
 
     def __unicode__(self):
         return str(self)
@@ -157,6 +193,7 @@ class Question(models.Model):
     handle = models.CharField(max_length=50)
     question = models.CharField(max_length=255)
     answer = models.CharField(max_length=255)
+    weight = models.SmallIntegerField(default=1)
     template = models.CharField(max_length=255,
             default='question/generic.html')
 
@@ -164,6 +201,20 @@ class Question(models.Model):
     def factory(**kwargs):
         q, created = Question.objects.get_or_create(**kwargs)
         return q
+
+    def correct(self, answer):
+        return self.answer == answer
+
+    def downcast(self):
+        try:
+            return self.nimquestion
+        except NimQuestion.DoesNotExist:
+            pass
+        try:
+            return self.multiplechoicequestion
+        except MultipleChoiceQuestion.DoesNotExist:
+            pass
+        return self
 
     def __unicode__(self):
         return str(self)
@@ -173,6 +224,18 @@ class Question(models.Model):
 
     def __repr__(self):
         return self.question[:10]
+
+class NimQuestion(Question):
+
+    @staticmethod
+    def factory(**kwargs):
+        q, created = NimQuestion.objects.get_or_create(**kwargs)
+        return q
+
+    def correct(self, answer):
+        import re
+        regex = re.compile("^.*\[1\][^,]+$")
+        return regex.match(answer) is not None
 
 class MultipleChoiceQuestion(Question):
     answers = models.ManyToManyField('Answer', related_name='+')
