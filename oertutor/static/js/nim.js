@@ -217,7 +217,7 @@ function NimGame(opt){
         //   or everything but one. The latter is the case when there 
         //   are an even number of equally sized stacks.
         var index = Math.floor(Math.random()*ne_stacks.length)
-        stack = ne_stacks[index];
+        stack = ne_stacks[0];
         if(ne_stacks.length % 2 == 0){
             reduction = ( _s.stacks[stack] > 1 ? _s.stacks[stack]-1 : 1 );
         }else{
