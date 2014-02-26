@@ -177,10 +177,38 @@ def load_db():
     StudentCategory.objects.get_or_create(title="Binary High", kc=kcs['binary'],
             lower_score=0.5)
 
+    test4 = Test.objects.create(title="Can you apply the nim-sum?")
+    test4.questions.add(MultipleChoiceQuestion.factory(
+        handle='q1',
+        question="On the table are three stacks. The first stack has 10\
+        objects. The second stack has 8 objects. The third stack has 6 objects.\
+        From which stack do you take objects when making an optimal move?",
+        answer="3",
+        template="question/radio-vertical.html",
+        answer_list=(
+            ("null", "I have no idea."),
+            ("1", "The first stack."),
+            ("2", "The second stack."),
+            ("3", "The third stack."),
+            ("any", "Any stack will do."))))
+    test4.questions.add(MultipleChoiceQuestion.factory(
+        handle='q1',
+        question="On the table are three stacks. The first stack has 10\
+        objects. The second stack has 8 objects. The third stack has 6 objects.\
+        How many objects will you take from a stack when making an optimal move?",
+        answer="4",
+        template="question/radio-vertical.html",
+        answer_list=(
+            ("null", "I have no idea."),
+            ("2", "Two objects."),
+            ("4", "Four objects."),
+            ("6", "Six objects."),
+            ("any", "Any stack will do."))))
+    test4.save()
     kcs['cancel2powers'], created = KnowledgeComponent.objects.get_or_create(
         title = "They come in pairs",
-        pretest = test,
-        posttest = test,
+        pretest = test4,
+        posttest = test4,
         description = "Cancel equal powers of 2",
         curriculum = curr
     )
@@ -289,8 +317,13 @@ def load_db():
     )
 
     Resource.factory(
-        title = "Example of pair canceling",
-        source = "/static/html/oer3.html",
+        title = "Introducing pair canceling",
+        source = "/static/html/oer_nim_pair_canceling_1.html",
         kc = kcs['cancel2powers']
     )
 
+    Resource.factory(
+        title = "An example of pair canceling",
+        source = "/static/html/oer_nim_pair_canceling_2.html",
+        kc = kcs['cancel2powers']
+    )
