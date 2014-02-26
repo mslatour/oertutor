@@ -22,7 +22,13 @@ def tutor(request):
     curriculum = select_curriculum(request)
     kcs = KnowledgeComponent.objects.filter(curriculum=curriculum)
     trial = select_trial(student, curriculum)
-    if trial is not None:
+    if student.phase == Student.DONE:
+        progress = 100
+    elif student.phase == Student.EXAM:
+        progress = int(round(float(len(kcs)+1)/((len(kcs)+2))*100))
+    elif student.phase == Student.NEW:
+        progress = 0
+    elif trial is not None:
         location = list(kcs).index(trial.kc)
         progress = int(round((float(location+1)/(len(kcs)+2))*100))
     else:
@@ -155,8 +161,8 @@ def next_step(request):
                 student.save()
                 return HttpResponseRedirect('/tutor')
         elif student.phase == Student.EXAM:
-            if trial is not None and curriculum.exam is not None:
-                result = trial.curriculum.exam.grade(request.POST, student)
+            if curriculum.exam is not None:
+                result = curriculum.exam.grade(request.POST, student)
                 student.phase = Student.DONE
                 student.save()
                 return HttpResponseRedirect('/tutor')
