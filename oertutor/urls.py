@@ -7,12 +7,10 @@ from django.contrib import admin
 admin.autodiscover()
 
 urlpatterns = patterns('oertutor.views',
-    url(r'^$', interface, name='interface'),
-    url(r'^nim/$', nim, name='nim'),
+    url(r'^$', tutor, name='main'),
     url(r'^tutor/$', tutor, name='tutor'),
     url(r'^tutor/load$', load, name='tutor_load'),
     url(r'^tutor/next$', next_step, name='tutor_next'),
-    url(r'^tutor/observation/$', observation, name='tutor_observation'),
     # Examples:
     # url(r'^$', 'oertutor.views.home', name='home'),
     # url(r'^oertutor/', include('oertutor.foo.urls')),
