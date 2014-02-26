@@ -19,19 +19,21 @@
 					$('#nim-container').hide()
 				}
 			}
-			function init(){
+			function init(stacks){
 				// Initialize Nim Game
 				$('#nim-result-win').hide()
 				$('#nim-result-loose').hide()
 				$('#nim-container').show()
-				a = Math.round(Math.random()*2,0)+1;
-				b = Math.round(Math.random()*2,0)+1;
-				if(Math.random() < 0.34){
-					stacks = [a,b,a]
-				}else if(Math.random() < 0.67){
-					stacks = [b,a,a]
-				}else {
-					stacks = [a,a,b]
+				if(!stacks){
+					a = Math.round(Math.random()*2,0)+1;
+					b = Math.round(Math.random()*2,0)+1;
+					if(Math.random() < 0.34){
+						stacks = [a,b,a]
+					}else if(Math.random() < 0.67){
+						stacks = [b,a,a]
+					}else {
+						stacks = [a,a,b]
+					}
 				}
 				opt = {
 					"container" : document.getElementById("nim-container"),
@@ -43,7 +45,7 @@
 				game = new NimGame(opt);
 				$("#nim-msg").addClass("hidden")
 			}
-			document.body.onload = init;
+			document.body.onload = function(){ init(); };
 		</script>
 		<p>
 			This is a game of Nim. The orange rectangles represent stacks of

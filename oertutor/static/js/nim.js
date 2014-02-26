@@ -38,6 +38,7 @@ function NimGame(opt){
                 _s[option] = opt[option]
             }
         }
+		$(_s.container).html('');
         _s.init_render();
 		if(_s.interactive){
 			_s.play();
