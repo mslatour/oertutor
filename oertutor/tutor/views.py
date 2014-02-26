@@ -8,7 +8,7 @@ from django.http import HttpResponse, HttpResponseBadRequest, \
     HttpResponseRedirect
 from decimal import Decimal
 from oertutor.ga.web import *
-from oertutor.tutor.helpers import select_trial, grade_test
+from oertutor.tutor.helpers import select_trial
 from oertutor.helpers import select_curriculum
 import requests, json
 import random
@@ -57,7 +57,11 @@ def tutor(request):
     elif student.phase == Student.PRETEST:
         if trial is not None:
             kc = trial.kc
-            return render(request, 'test.html', {
+            if kc.pretest.template is None:
+                template = "test.html"
+            else:
+                template = kc.pretest.template
+            return render(request, template, {
                 'kcs':kcs,
                 'selected_kc':kc.id if kc is not None else 0,
                 'progress': progress,
@@ -81,7 +85,11 @@ def tutor(request):
     elif student.phase == Student.POSTTEST:
         if trial is not None:
             kc = trial.kc
-            return render(request, 'test.html', {
+            if kc.posttest.template is None:
+                template = "test.html"
+            else:
+                template = kc.posttest.template
+            return render(request, template, {
                 'kcs':kcs,
                 'selected_kc':kc.id if kc is not None else 0,
                 'progress': progress,
@@ -89,6 +97,19 @@ def tutor(request):
                 'test': kc.posttest,
                 'questions': kc.posttest.questions.all()
             })
+    elif student.phase == Student.EXAM:
+        if curriculum.exam.template is None:
+            template = "test.html"
+        else:
+            template = curriculum.exam.template
+        return render(request, template,{
+            'kcs':kcs,
+            'selected_kc': "exam",
+            'progress': progress,
+            'curriculum':curriculum,
+            'test': curriculum.exam,
+            'questions':curriculum.exam.questions.all()
+        })
     elif student.phase == Student.DONE:
         return render(request, 'done.html', {
             'kcs':kcs,
@@ -104,7 +125,7 @@ def next_step(request):
     if request.method == "POST":
         if student.phase == Student.PRETEST:
             if trial is not None:
-                result = grade_test(request, student, trial.kc.pretest)
+                result = trial.kc.pretest.grade(request.POST, student)
                 trial.pretest_result = result
                 if result.score == 1:
                     student.phase = Student.SKIP
@@ -117,7 +138,7 @@ def next_step(request):
             return HttpResponseRedirect('/tutor/')
         elif student.phase == Student.POSTTEST:
             if trial is not None:
-                result = grade_test(request, student, trial.kc.posttest)
+                result = trial.kc.posttest.grade(request.POST, student)
                 trial.posttest_result=result
                 trial.save()
                 postscore = Decimal(result.score)
@@ -127,12 +148,18 @@ def next_step(request):
                 next_trial = select_trial(student)
                 if next_trial is not None:
                     student.phase = Student.INTRO
-                    student.save()
-                    return HttpResponseRedirect('/tutor/')
+                elif curriculum.exam is not None:
+                    student.phase = Student.EXAM
                 else:
                     student.phase = Student.DONE
-                    student.save()
-                    return HttpResponseRedirect('/tutor')
+                student.save()
+                return HttpResponseRedirect('/tutor')
+        elif student.phase == Student.EXAM:
+            if trial is not None and curriculum.exam is not None:
+                result = trial.curriculum.exam.grade(request.POST, student)
+                student.phase = Student.DONE
+                student.save()
+                return HttpResponseRedirect('/tutor')
     elif request.method == "GET":
         if student.phase == Student.NEW:
             if trial is not None:
@@ -151,12 +178,12 @@ def next_step(request):
                 next_trial = select_trial(student)
                 if next_trial is not None:
                     student.phase = Student.INTRO
-                    student.save()
-                    return HttpResponseRedirect('/tutor/')
+                elif curriculum.exam is not None:
+                    student.phase = Student.EXAM
                 else:
                     student.phase = Student.DONE
-                    student.save()
-                    return HttpResponseRedirect('/tutor')
+                student.save()
+                return HttpResponseRedirect('/tutor/')
         elif student.phase == Student.SEQUENCE:
             if trial is not None:
                 if (trial.sequence_position+1) < len(trial.sequence):
