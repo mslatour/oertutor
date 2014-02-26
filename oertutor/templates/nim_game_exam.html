@@ -21,7 +21,6 @@
 			moves += (moves == ""?"":",")+"["+playback[p]["agent"]+"]";
 			moves += playback[p]["stack"]+":"+playback[p]["reduction"];
 		}
-		console.log(moves)
 		$("#"+handles[index]).val(moves)
 		var score_elem
 		if(winner == 1){
@@ -44,14 +43,12 @@
 				$('#nim-container').hide()
 			}
 		}else{
-			console.log('done')
 			$('#nim-container').hide()
 			$('#test-submit').show()
 		}
 		index++;
 	}
 	function run(){
-		console.log("Running game "+index)
 		init(stacks[index])
 	}
 	function init(stacks){
