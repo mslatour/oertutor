@@ -17,14 +17,14 @@
 				<div class="col-lg-12"><h3>{{ curriculum.title }}</h3></div>
 			</div>
 			<div class='row'>
-				<div class="col-lg-12 well well-sm hidden-sm hidden-xs">
+				<div class="col-lg-12 well well-sm hidden-sm hidden-xs" style="padding: 0 9px;">
 					<div class="pagination" style="margin: auto;">
 						{% if selected_kc == "start" %}
 						<li class='active'>
 						{% else %}
 						<li class='disabled'>
 						{% endif %}
-							<a><h2>Start</h2></a>
+							<a class="h2">Start</a>
 						</li>
 					{% for kc in kcs %}
 						{% if kc.id == selected_kc %}
@@ -32,8 +32,8 @@
 						{% else %}
 						<li class="disabled">
 						{% endif %}
-						<a>
-							<h2>Step {{ forloop.counter }}</h2>
+						<a class="h2">
+							Step {{ forloop.counter }}
 						</a></li>
 					{% endfor %}
 						{% if curriculum.exam %}
@@ -42,7 +42,7 @@
                             {% else %}
                             <li class='disabled'>
                             {% endif %}
-                                <a><h2>{{curriculum.exam.title}}</h2></a>
+                                <a class="h2">{{curriculum.exam.title}}</a>
                             </li>
                         {% endif %}
 						{% if selected_kc == "end" %}
@@ -50,7 +50,7 @@
 						{% else %}
 						<li class='disabled'>
 						{% endif %}
-							<a><h2>End</h2></a>
+							<a class="h2">End</a>
 						</li>
 					</div>
 				</div>
