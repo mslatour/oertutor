@@ -25,7 +25,6 @@ def select_trial(student, curriculum=None):
         else:
             return None
 
-
 def grade_test(request, student, test):
     score = 0.0
     result = TestResult.objects.create(test=test, student=student)

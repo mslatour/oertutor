@@ -140,7 +140,7 @@ def next_step(request):
                         result.score, student)
                     student.phase = Student.SEQUENCE
                 trial.save()
-                student.save()
+                student.save(update_fields=["phase"])
             return HttpResponseRedirect('/tutor/')
         elif student.phase == Student.POSTTEST:
             if trial is not None:
@@ -158,24 +158,24 @@ def next_step(request):
                     student.phase = Student.EXAM
                 else:
                     student.phase = Student.DONE
-                student.save()
+                student.save(update_fields=["phase"])
                 return HttpResponseRedirect('/tutor')
         elif student.phase == Student.EXAM:
             if curriculum.exam is not None:
                 result = curriculum.exam.grade(request.POST, student)
                 student.phase = Student.DONE
-                student.save()
+                student.save(update_fields=["phase"])
                 return HttpResponseRedirect('/tutor')
     elif request.method == "GET":
         if student.phase == Student.NEW:
             if trial is not None:
                 next_kc = trial.kc
                 student.phase = Student.INTRO
-                student.save()
+                student.save(update_fields=["phase"])
                 return HttpResponseRedirect('/tutor/')
         elif student.phase == Student.INTRO:
             student.phase = Student.PRETEST
-            student.save()
+            student.save(update_fields=["phase"])
             return HttpResponseRedirect('/tutor')
         elif student.phase == Student.SKIP:
             if trial is not None:
@@ -188,7 +188,7 @@ def next_step(request):
                     student.phase = Student.EXAM
                 else:
                     student.phase = Student.DONE
-                student.save()
+                student.save(update_fields=["phase"])
                 return HttpResponseRedirect('/tutor/')
         elif student.phase == Student.SEQUENCE:
             if trial is not None:
@@ -197,7 +197,7 @@ def next_step(request):
                     trial.save()
                 else:
                     student.phase = Student.POSTTEST
-                    student.save()
+                    student.save(update_fields=["phase"])
                 return HttpResponseRedirect('/tutor')
     return HttpResponseRedirect('/tutor')
 

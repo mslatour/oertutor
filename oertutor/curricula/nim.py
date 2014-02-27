@@ -201,7 +201,7 @@ def load_db():
             ("3", "The third stack."),
             ("any", "Any stack will do."))))
     test4.questions.add(MultipleChoiceQuestion.factory(
-        handle='q1',
+        handle='q2',
         question="On the table are three stacks. The first stack has 10\
         objects. The second stack has 8 objects. The third stack has 6 objects.\
         How many objects will you take from a stack when making an optimal move?",
@@ -214,17 +214,17 @@ def load_db():
             ("6", "Six objects."),
             ("any", "Any stack will do."))))
     test4.save()
-    kcs['cancel2powers'], created = KnowledgeComponent.objects.get_or_create(
-        title = "They come in pairs",
+    kcs['nimsum'], created = KnowledgeComponent.objects.get_or_create(
+        title = "Doing some Nim magic",
         pretest = test4,
         posttest = test4,
-        description = "Cancel equal powers of 2",
+        description = "You can win every nim game by applying the right strategy.",
         curriculum = curr
     )
-    StudentCategory.objects.get_or_create(title="Cancel2Powers Low",
-            kc=kcs['cancel2powers'], upper_score=0.5)
-    StudentCategory.objects.get_or_create(title="Cancel2Powers High",
-            kc=kcs['cancel2powers'], lower_score=0.5)
+    StudentCategory.objects.get_or_create(title="NimSum Low",
+            kc=kcs['nimsum'], upper_score=0.5)
+    StudentCategory.objects.get_or_create(title="NimSum High",
+            kc=kcs['nimsum'], lower_score=0.5)
     """
     kcs['nimsum'], created = KnowledgeComponent.objects.get_or_create(
         title = "Nim-sum",
@@ -245,8 +245,7 @@ def load_db():
     # Create structure in the curriculum
     kcs['intuition'].antecedents.add(kcs['rules'])
     kcs['binary'].antecedents.add(kcs['intuition'])
-    kcs['cancel2powers'].antecedents.add(kcs['binary'])
-#    kcs['nimsum'].antecedents.add(kcs['cancel2powers'])
+    kcs['nimsum'].antecedents.add(kcs['binary'])
 
     # Save structure
     for kc in kcs:
@@ -328,11 +327,17 @@ def load_db():
     Resource.factory(
         title = "Introducing pair canceling",
         source = "/static/html/oer_nim_pair_canceling_1.html",
-        kc = kcs['cancel2powers']
+        kc = kcs['nimsum']
     )
 
     Resource.factory(
         title = "An example of pair canceling",
         source = "/static/html/oer_nim_pair_canceling_2.html",
-        kc = kcs['cancel2powers']
+        kc = kcs['nimsum']
+    )
+
+    Resource.factory(
+        title = "An example of pair canceling",
+        source = "/static/html/oer_nim_xor_1.html",
+        kc = kcs['nimsum']
     )
