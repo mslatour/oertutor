@@ -2,6 +2,7 @@ from django.db import models
 from datetime import datetime
 from oertutor.ga.utils import pdf_sample
 from oertutor.ga.exceptions import ImpossibleException
+from oertutor.ga import signals
 from copy import deepcopy
 import random
 
@@ -767,6 +768,7 @@ class Population(models.Model):#{{{
             generation = Generation.factory([], self)
         else:
             generation = Generation.factory(individuals, self)
+        signals.ga_next_generation.send(sender=self, generation=generation)
         return generation
 
     def immigrate(self, immigrants):
