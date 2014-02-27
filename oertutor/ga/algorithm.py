@@ -146,7 +146,13 @@ def switch_generations(num_pop, num_elite, p_mutate, population, DEBUG=0x0):
             nxt_generation.append(Individual.factory(member))
 
     # New generation
-    return population.next_generation(nxt_generation[:num_pop])
+    generation = population.next_generation(nxt_generation[:num_pop])
+    # Migration
+    immigrants = []
+    for pop in Population.objects.all():
+        if not pop.pk == population.pk:
+            imigrants.append(pop.migrate())
+    population.immigrate(immigrants)
 
 def test_validity(chromosome):
     return (

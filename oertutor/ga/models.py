@@ -743,7 +743,7 @@ class Population(models.Model):#{{{
         return self.__repr__()
 
     def __repr__(self):
-        return "<%s: %s>" % (self.__class__.__name__, self.pk)#}}}
+        return "<%s: %s>" % (self.__class__.__name__, self.pk)
 
     def current_generation(self):
         """
@@ -791,6 +791,8 @@ class Population(models.Model):#{{{
         generation.delete_individual(worst_individual)
         # Immigrate the picked immigrant
         generation.add_individuals([immigrant])
+        signals.ga_immigrate.send(sender=self, generation=generation,
+                worst_individual=worst_individual, immigrant=immigrant)
 
     def migrate(self):
         """
@@ -799,5 +801,4 @@ class Population(models.Model):#{{{
         # Select current generation
         generation = self.current_generation()
         # Return best chromosome
-        return generation.select_best_individuals()[0]
-#}}}
+        return generation.select_best_individuals()[0]#}}}
