@@ -201,7 +201,7 @@ def load_db():
             ("3", "The third stack."),
             ("any", "Any stack will do."))))
     test4.questions.add(MultipleChoiceQuestion.factory(
-        handle='q1',
+        handle='q2',
         question="On the table are three stacks. The first stack has 10\
         objects. The second stack has 8 objects. The third stack has 6 objects.\
         How many objects will you take from a stack when making an optimal move?",
