@@ -151,8 +151,10 @@ def switch_generations(num_pop, num_elite, p_mutate, population, DEBUG=0x0):
     immigrants = []
     for pop in Population.objects.all():
         if not pop.pk == population.pk:
-            imigrants.append(pop.migrate())
-    population.immigrate(immigrants)
+            immigrants.append(pop.migrate())
+    if len(immigrants) > 0:
+        population.immigrate(immigrants)
+    return generation
 
 def test_validity(chromosome):
     return (
