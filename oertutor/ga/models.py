@@ -605,7 +605,7 @@ class Generation(models.Model):#{{{
         # Only look at individuals in this generation
         members = members.filter(generation=self)
         samples = pdf_sample(num, members,
-                lambda x: x.fitness if x.fitness is not None else 0)
+                lambda x: max(x.fitness,0))
         return [sample.individual for sample in samples]
 
     def select_best_individuals(self, num=1):
@@ -743,7 +743,7 @@ class Population(models.Model):#{{{
         return self.__repr__()
 
     def __repr__(self):
-        return "<%s: %s>" % (self.__class__.__name__, self.pk)#}}}
+        return "<%s: %s>" % (self.__class__.__name__, self.pk)
 
     def current_generation(self):
         """
@@ -782,7 +782,7 @@ class Population(models.Model):#{{{
         """
         # Select immigrant according to the PDF based on the fitness values
         immigrant = pdf_sample(1, immigrants,
-                lambda x: x.fitness if x.fitness is not None else 0)
+                lambda x: max(x.fitness(),0))
         # Select current generation
         generation = self.current_generation()
         # Select worst individual in that generation
@@ -790,7 +790,9 @@ class Population(models.Model):#{{{
         # Remove the worst individual from the generation
         generation.delete_individual(worst_individual)
         # Immigrate the picked immigrant
-        generation.add_individuals([immigrant])
+        generation.add_individuals(immigrant)
+        signals.ga_immigrate.send(sender=self, generation=generation,
+                worst_individual=worst_individual, immigrant=immigrant[0])
 
     def migrate(self):
         """
@@ -799,5 +801,4 @@ class Population(models.Model):#{{{
         # Select current generation
         generation = self.current_generation()
         # Return best chromosome
-        return generation.select_best_individuals()[0]
-#}}}
+        return generation.select_best_individuals()[0]#}}}

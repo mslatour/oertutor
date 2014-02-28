@@ -2,7 +2,7 @@ from django.conf.global_settings import TEMPLATE_CONTEXT_PROCESSORS as TCP
 import os
 # Django settings for oertutor project.
 
-DEBUG = True
+DEBUG = False
 TEMPLATE_DEBUG = DEBUG
 
 ADMINS = (
@@ -15,6 +15,8 @@ MANAGERS = ADMINS
 # Parse database configuration from $DATABASE_URL
 import dj_database_url
 DATABASES = {'default': dj_database_url.config()}
+
+ALLOWED_HOSTS = ['localhost','nim-tutor.herokuapp.com']
 
 # Local time zone for this installation. Choices can be found here:
 # http://en.wikipedia.org/wiki/List_of_tz_zones_by_name
@@ -122,6 +124,8 @@ INSTALLED_APPS = (
     'oertutor.ga',
     'oertutor.log'
 )
+
+LOG_SIGNALS = True
 
 # A sample logging configuration. The only tangible logging
 # performed by this configuration is to send an email to
