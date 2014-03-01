@@ -164,18 +164,13 @@ class Test(models.Model):
         weights = 0
         result = TestResult.objects.create(test=self, student=student)
         for question in self.questions.all():
-            print "grading",question.id
             weights += question.weight
             answer = answers.get(question.handle, "")
             StudentAnswer.objects.create(question=question, testresult=result,
                 student=student, answer=answer)
             if question.downcast().correct(answer):
-                print "correct!"
                 score += question.weight
-        print "weights",weights
-        print "unnormalized score",score
         score /= weights
-        print "normalized score",score
         result.score = score
         result.save()
         return result

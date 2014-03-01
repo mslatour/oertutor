@@ -27,8 +27,32 @@ def load_db():
     # Register curriculum
     curr, created = Curriculum.objects.get_or_create(
         title = "Become the Master of Nim",
-        description = "In this topic you will learn everything that you need" +
-            " to be a champion at the game NIM",
+        description = (
+            "<div class='panel panel-default'>"
+            "<div class='panel-heading'>Welcome</div>"
+            "<div class='panel-body'>"
+            "In this curriculum you will learn how to become the Master of"
+            "Nim. Nim is a game that you can play anywhere with two players"
+            "and several stacks of objects (e.g. coins). After these simple"
+            "steps you will be unbeatable."
+            "</div>"
+            "</div>"
+            "<div class='panel panel-default'>"
+            "<div class='panel-heading'>How does it work?</div>"
+            "<div class='panel-body'>"
+            "<ol>"
+            "<li>Learning Nim is divided in four topics</li>"
+            "<li>A topic contains one or more explanations</li>"
+            "<li>Topics start and end with a few questions</li>"
+            "<li>Try to answer the questions to your best effort, if you"
+            "really don't know the answer you can always indicate that.</li>"
+            "<li>After the four steps you'll be given the chance to show off"
+            "your skills in a series of Nim games.</li>"
+            "<li>And then you are ready to challenge your friends.</li>"
+            "</ol>"
+            "</div>"
+            "</div>"
+        ),
         exam = exam
     )
 
@@ -79,7 +103,13 @@ def load_db():
         title = "Rules of the game",
         pretest = test1,
         posttest = test1,
-        description = "How does the game work?",
+        description = (
+            "First things first, let's talk about the rules of the game. "
+            "As with each topic, you'll be asked some questions to determine "
+            "what you already knew about the topic. Then the rules will be "
+            "explained to you. After which you'll be asked some questions to "
+            "see what you've learned."
+        ),
         curriculum = curr
     )
     StudentCategory.objects.get_or_create(title="Rules Low", kc=kcs['rules'],
@@ -130,7 +160,15 @@ def load_db():
         title = "Intuition",
         pretest = test2,
         posttest = test2,
-        description = "Getting a feel for the game",
+        description = (
+            "Before we get down to the strategies, let's first build up some "
+            "intuition about Nim. We'll look at some of the simpler situations "
+            "that you will face when playing.<br /><br />"
+            "As with each topic, you'll be asked some questions to determine "
+            "what you already knew about the topic. Then the rules will be "
+            "explained to you. After which you'll be asked some questions to "
+            "see what you've learned."
+        ),
         curriculum = curr
     )
     StudentCategory.objects.get_or_create(title="Intuition Low", kc=kcs['intuition'],
@@ -178,7 +216,17 @@ def load_db():
         title = "Binary numbers",
         pretest = test3,
         posttest = test3,
-        description = "What are binary numbers?",
+        description = (
+            "Now that we have some intuition about how to play the game, let's "
+            "prepare ourselves for the ultimate strategy that you'll learn in "
+            "the last step. But before you can learn that, you'll need to know"
+            " a thing or two about binary numbers. So let's get started!"
+            "<br /><br />"
+            "As with each topic, you'll be asked some questions to determine "
+            "what you already knew about the topic. Then the rules will be "
+            "explained to you. After which you'll be asked some questions to "
+            "see what you've learned."
+        ),
         curriculum = curr
     )
     StudentCategory.objects.get_or_create(title="Binary Low", kc=kcs['binary'],
@@ -186,7 +234,7 @@ def load_db():
     StudentCategory.objects.get_or_create(title="Binary High", kc=kcs['binary'],
             lower_score=0.5)
 
-    test4 = Test.objects.create(title="Can you apply the nim-sum?")
+    test4 = Test.objects.create(title="Can you see the patterns?")
     test4.questions.add(MultipleChoiceQuestion.factory(
         handle='q1',
         question="On the table are three stacks. The first stack has 10\
@@ -218,26 +266,25 @@ def load_db():
         title = "Doing some Nim magic",
         pretest = test4,
         posttest = test4,
-        description = "You can win every nim game by applying the right strategy.",
+        description = (
+            "You can win any nim game that is winnable by applying the right "
+            "strategy. Now that you have learned how to see numbers in their "
+            "binary form, you are ready to see patterns in the Nim stacks that"
+            " others won't. These patterns will inform you from which stack "
+            "you should take objects and how many."
+            "<br /><br />"
+            "As with each topic, you'll be asked some questions to determine "
+            "what you already knew about the topic. Then the rules will be "
+            "explained to you. After which you'll be asked some questions to "
+            "see what you've learned."
+        ),
         curriculum = curr
     )
     StudentCategory.objects.get_or_create(title="NimSum Low",
             kc=kcs['nimsum'], upper_score=0.5)
     StudentCategory.objects.get_or_create(title="NimSum High",
             kc=kcs['nimsum'], lower_score=0.5)
-    """
-    kcs['nimsum'], created = KnowledgeComponent.objects.get_or_create(
-        title = "Nim-sum",
-        pretest = test,
-        posttest = test,
-        description = "Using XOR to win the game",
-        curriculum = curr
-    )
-    StudentCategory.objects.get_or_create(title="Nimsum Low", kc=kcs['nimsum'],
-            upper_score=0.5)
-    StudentCategory.objects.get_or_create(title="Nimsum High", kc=kcs['nimsum'],
-            lower_score=0.5)
-    """
+
     # Save knowledge components
     for kc in kcs:
         kcs[kc].save()
