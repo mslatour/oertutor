@@ -2,8 +2,10 @@
 {% load staticfiles %}
 
 {% block content %}
-<div class='well'>
-	<h3>{{ title }}</h3>
+<div class="panel panel-default">
+	<div class="panel-heading h4">Topic</div>
+	<div class='panel-body well' style='padding-top:0'>
+	<h2>{{ title }}</h2>
 	<p>{{ description|safe }}</p>
 	<a href='/tutor/next' class='btn btn-primary btn-lg'>Start</a>
 </div>
