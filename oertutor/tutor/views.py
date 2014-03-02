@@ -20,7 +20,7 @@ from oertutor.tutor.models import *
 def tutor(request):
     student = Student.by_session(request.session)
     curriculum = select_curriculum(request)
-    kcs = KnowledgeComponent.objects.filter(curriculum=curriculum)
+    kcs = KnowledgeComponent.objects.order_by('pk').filter(curriculum=curriculum)
     trial = select_trial(student, curriculum)
     if student.phase == Student.DONE:
         progress = 100
