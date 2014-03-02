@@ -10,6 +10,7 @@ urlpatterns = patterns('oertutor.views',
     url(r'^$', tutor, name='main'),
     url(r'^tutor/$', tutor, name='tutor'),
     url(r'^tutor/load$', load, name='tutor_load'),
+    url(r'^tutor/forget$', forget, name='tutor_forget'),
     url(r'^tutor/next$', next_step, name='tutor_next'),
     # Examples:
     # url(r'^$', 'oertutor.views.home', name='home'),

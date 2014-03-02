@@ -205,7 +205,6 @@ def next_step(request):
 def determine_student_category(kc, score, student):
     cat = StudentCategory.objects.filter(kc=kc, lower_score__lte=score,
             upper_score__gt=score)[0]
-    print "Student category", cat
     return cat
 
 def observation(request):
@@ -222,6 +221,10 @@ def observation(request):
     else:
         return HttpResponseBadRequest()
 
+def forget(request):
+    request.session.clear()
+    return HttpResponseRedirect('/tutor')
+
 def load(request):
     from oertutor.curricula.nim import load_db
     load_db()
@@ -230,7 +233,7 @@ def load(request):
         kc = category.kc
         resources = Resource.objects.filter(kc=kc)
         if len(resources) == 0:
-            print "No resources for", kc
+            continue
         else:
             init_population(category, list(resources))
     return HttpResponse("Done")
