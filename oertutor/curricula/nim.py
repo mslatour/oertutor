@@ -153,8 +153,8 @@ def load_db():
         template="question/radio-vertical.html",
         answer_list=(
             ("null", "I have no idea."),
-            ("1fromany", "Take one object from the any single stack"),
-            ("2fromany", "Take two objects from the any single stack"))))
+            ("1fromany", "Take one object from any single stack"),
+            ("2fromany", "Take two objects from any single stack"))))
     test2.save()
     kcs['intuition'], created = KnowledgeComponent.objects.get_or_create(
         title = "Intuition",
