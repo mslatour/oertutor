@@ -3,9 +3,17 @@
 "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html>
     <head>
-        <title>OER Tutor</title>
-		<meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>OER Tutor: {{ curriculum.title }}</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta property="og:type" content="website">
+        <meta property="og:url" content="{{ url }}">
+        <meta property="og:title" content="OER Tutor: {{ curriculum.title }}">
+        <meta name="twitter:card" content="{{curriculum.title}}">
+        <meta name="twitter:creator" content="@mslatour">
         <link href="{% static 'css/bootstrap.superhero.min.css' %}" rel="stylesheet" media="screen">
+        <link rel="stylesheet" href="{% static 'css/social-likes_flat.css' %}">
+        <script src="{% static 'js/jquery.min.js' %}"></script>
+        <script src="{% static 'js/social-likes.min.js'%}"></script>
         {% block headinclude %}{% endblock %}
     </head>
     <body>
@@ -62,16 +70,17 @@
 			</div>
 			<div class="row">
 				{% block content %}
-				<div class='well'>
-					<h1>Topic: {{ curriculum.title }}</h1>
-					<p>{{ curriculum.description }}</p>
-					<p>
-						<a class="btn btn-primary btn-lg" href="/tutor">
-							Start
-						</a>
-					</p>
-				</div>
 				{% endblock %}
+				<div class="panel panel-default">
+					<div class="panel-heading h4">Share this with your network</div>
+					<div class='panel-body well' style='padding-top:0'>
+                        <div class="social-likes" data-url="{{ url }}">
+							<div class="facebook" title="Share link on Facebook">Facebook</div>
+							<div class="twitter" title="Share link on Twitter">Twitter</div>
+							<div class="plusone" title="Share link on Google+">Google+</div>
+						</div>
+					</div>
+				</div>
 			</div>
 			<!--<div class='row'>
 				<div class='alert alert-success'>

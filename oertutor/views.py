@@ -28,6 +28,3 @@ def interface(request):
             'selected_kc':kc.id if kc is not None else 0,
             'curriculum':curriculum
         })
-
-def nim(request):
-    return render(request, 'nim.html')

@@ -2,9 +2,9 @@
 {% load staticfiles %}
 
 {% block headinclude %}
-<link href="/static/css/nim.css" rel="stylesheet" media="screen">
-<script src="/static/js/jquery.min.js"></script>
-<script src="/static/js/nim.js"></script>
+<link href="{% static 'css/nim.css' %}" rel="stylesheet" media="screen">
+<script src="{% static 'js/jquery.min.js' %}"></script>
+<script src="{% static 'js/nim.js' %}"></script>
 {% endblock %}
 {% block content %}
 <script>
@@ -141,6 +141,7 @@
 			</div>
 		</div>
 	</div>
+</div>
 </div>
 </div>
 {% endblock %}

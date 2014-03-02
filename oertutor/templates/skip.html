@@ -2,10 +2,13 @@
 {% load staticfiles %}
 
 {% block content %}
-<div class='well'>
-	<h3>Got it, next!</h3>
-	<p>You seem to have already grasped this concept. That is why we will skip
-	this lesson.</p>
-	<a href='/tutor/next' class='btn btn-primary btn-lg'>Ok, next!</a>
+<div class="panel panel-default">
+	<div class="panel-heading h4">Skipped</div>
+	<div class='panel-body well' style='padding-top:0'>
+		<h2>Got it, next!</h2>
+		<p>You seem to have already grasped this concept. That is why we will skip
+		this topic.</p>
+		<a href='/tutor/next' class='btn btn-primary btn-lg'>Ok, next!</a>
+	</div>
 </div>
 {% endblock %}

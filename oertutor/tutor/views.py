@@ -35,6 +35,7 @@ def tutor(request):
         progress = None
     if student.phase == Student.NEW:
         return render(request, 'new.html', {
+            'url': request.build_absolute_uri(),
             'kcs':kcs,
             'selected_kc': "start",
             'progress': progress,
@@ -44,6 +45,7 @@ def tutor(request):
         if trial is not None:
             kc = trial.kc
             return render(request, 'intro.html', {
+                'url': request.build_absolute_uri(),
                 'kcs':kcs,
                 'selected_kc':kc.id if kc is not None else 0,
                 'progress': progress,
@@ -55,6 +57,7 @@ def tutor(request):
         if trial is not None:
             kc = trial.kc
             return render(request, 'skip.html', {
+                'url': request.build_absolute_uri(),
                 'kcs':kcs,
                 'selected_kc':kc.id if kc is not None else 0,
                 'progress': progress,
@@ -68,6 +71,7 @@ def tutor(request):
             else:
                 template = kc.pretest.template
             return render(request, template, {
+                'url': request.build_absolute_uri(),
                 'kcs':kcs,
                 'selected_kc':kc.id if kc is not None else 0,
                 'progress': progress,
@@ -82,6 +86,7 @@ def tutor(request):
                 trial.sequence = request_sequence(trial.category)
                 trial.save()
             return render(request, 'resource.html', {
+                'url': request.build_absolute_uri(),
                 'kcs':kcs,
                 'selected_kc':kc.id if kc is not None else 0,
                 'progress': progress,
@@ -96,6 +101,7 @@ def tutor(request):
             else:
                 template = kc.posttest.template
             return render(request, template, {
+                'url': request.build_absolute_uri(),
                 'kcs':kcs,
                 'selected_kc':kc.id if kc is not None else 0,
                 'progress': progress,
@@ -109,6 +115,7 @@ def tutor(request):
         else:
             template = curriculum.exam.template
         return render(request, template,{
+            'url': request.build_absolute_uri(),
             'kcs':kcs,
             'selected_kc': "exam",
             'progress': progress,
@@ -118,6 +125,7 @@ def tutor(request):
         })
     elif student.phase == Student.DONE:
         return render(request, 'done.html', {
+            'url': request.build_absolute_uri(),
             'kcs':kcs,
             'selected_kc': "end",
             'progress': progress,
@@ -205,7 +213,6 @@ def next_step(request):
 def determine_student_category(kc, score, student):
     cat = StudentCategory.objects.filter(kc=kc, lower_score__lte=score,
             upper_score__gt=score)[0]
-    print "Student category", cat
     return cat
 
 def observation(request):
@@ -222,6 +229,10 @@ def observation(request):
     else:
         return HttpResponseBadRequest()
 
+def forget(request):
+    request.session.clear()
+    return HttpResponseRedirect('/tutor')
+
 def load(request):
     from oertutor.curricula.nim import load_db
     load_db()
@@ -230,7 +241,7 @@ def load(request):
         kc = category.kc
         resources = Resource.objects.filter(kc=kc)
         if len(resources) == 0:
-            print "No resources for", kc
+            continue
         else:
             init_population(category, list(resources))
     return HttpResponse("Done")

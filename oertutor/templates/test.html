@@ -5,22 +5,25 @@
 <div class="panel panel-default">
 	<div class="panel-heading h4">Test</div>
 	<div class='panel-body well' style='padding-top:0'>
-	<h2>{{ test.title }}</h2>
-    <form method="post" action='/tutor/next'>
-        {% csrf_token %}
-        <fieldset>
-            {% for q in questions %}
-				<div class="panel panel-default">
-					<div class="panel-heading">
-						Question {{ forloop.counter }}
+		<h2>{{ test.title }}</h2>
+		<form method="post" action='/tutor/next'>
+			{% csrf_token %}
+			<fieldset>
+				{% for q in questions %}
+					<div class="panel panel-default">
+						<div class="panel-heading">
+							Question {{ forloop.counter }}
+						</div>
+						<div class="panel-body">
+							{% include q.template with q=q %}
+						</div>
 					</div>
-					<div class="panel-body">
-						{% include q.template with q=q %}
-					</div>
-				</div>
-            {% endfor %}
-        </fieldset>
-        <button type='submit' class='btn btn-primary btn-lg'>Submit answers</button>
-    </form>
+				{% endfor %}
+			</fieldset>
+			<button type='submit' class='btn btn-primary btn-lg'>
+				Submit answers
+			</button>
+		</form>
+	</div>
 </div>
 {% endblock %}
