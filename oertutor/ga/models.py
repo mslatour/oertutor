@@ -702,6 +702,7 @@ class Generation(models.Model):#{{{
 
 class Population(models.Model):#{{{
     pool = models.ManyToManyField('Gene', null=True, related_name='+')
+    neighbours = models.ManyToManyField('self', null=True, related_name='+')
 
     @staticmethod
     def factory(individuals):
