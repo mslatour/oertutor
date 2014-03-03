@@ -274,8 +274,7 @@ def load_db():
             ("2", "Eight objects from the second stack."),
             ("3", "Seven objects from the third stack."),
             ("4", "Six objects from the fourth stack."),
-            ("5", "Five objects from the fift stack."),
-            ("any", "Any stack will do."))))
+            ("5", "Five objects from the fift stack."))))
     test4.save()
     kcs['nimsum'], created = KnowledgeComponent.objects.get_or_create(
         title = "Doing some Nim magic",
