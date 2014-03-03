@@ -261,6 +261,21 @@ def load_db():
             ("4", "Four objects."),
             ("6", "Six objects."),
             ("any", "Any stack will do."))))
+    test4.questions.add(MultipleChoiceQuestion.factory(
+        handle='q3',
+        question="On the table are five stacks. The first stack has 9\
+        objects, the second 8, the third 7, the fourth 6 and the fift stack\
+        has 5 objects. Which move will you make?",
+        answer="5",
+        template="question/radio-vertical.html",
+        answer_list=(
+            ("null", "I have no idea."),
+            ("1", "Nine objects from the first stack."),
+            ("2", "Eight objects from the second stack."),
+            ("3", "Seven objects from the third stack."),
+            ("4", "Six objects from the fourth stack."),
+            ("5", "Five objects from the fift stack."),
+            ("any", "Any stack will do."))))
     test4.save()
     kcs['nimsum'], created = KnowledgeComponent.objects.get_or_create(
         title = "Doing some Nim magic",
