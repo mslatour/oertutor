@@ -149,9 +149,8 @@ def switch_generations(num_pop, num_elite, p_mutate, population, DEBUG=0x0):
     generation = population.next_generation(nxt_generation[:num_pop])
     # Migration
     immigrants = []
-    for pop in Population.objects.all():
-        if not pop.pk == population.pk:
-            immigrants.append(pop.migrate())
+    for pop in population.neighbours.all():
+        immigrants.append(pop.migrate())
     if len(immigrants) > 0:
         population.immigrate(immigrants)
     return generation

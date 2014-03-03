@@ -112,10 +112,14 @@ def load_db():
         ),
         curriculum = curr
     )
-    StudentCategory.objects.get_or_create(title="Rules Low", kc=kcs['rules'],
-            upper_score=0.5)
-    StudentCategory.objects.get_or_create(title="Rules High", kc=kcs['rules'],
-            lower_score=0.5)
+    low,c = StudentCategory.objects.get_or_create(title="Rules Low",
+            kc=kcs['rules'], upper_score=0.5)
+    high,c = StudentCategory.objects.get_or_create(title="Rules High",
+            kc=kcs['rules'], lower_score=0.5)
+    low.neighbours.add(high)
+    low.save()
+    high.neighbours.add(low)
+    high.save()
 
     # KC: Intuition on how to play
     test2 = Test.objects.create(title="Let's see what your intuition is about the game.")
@@ -171,10 +175,14 @@ def load_db():
         ),
         curriculum = curr
     )
-    StudentCategory.objects.get_or_create(title="Intuition Low", kc=kcs['intuition'],
-            upper_score=0.5)
-    StudentCategory.objects.get_or_create(title="Intuition High", kc=kcs['intuition'],
-            lower_score=0.5)
+    low,c = StudentCategory.objects.get_or_create(title="Intuition Low",
+            kc=kcs['intuition'], upper_score=0.5)
+    high,c = StudentCategory.objects.get_or_create(title="Intuition High",
+            kc=kcs['intuition'], lower_score=0.5)
+    low.neighbours.add(high)
+    low.save()
+    high.neighbours.add(low)
+    high.save()
 
     # KC: Binary numbers
     test3 = Test.objects.create(title="What do you know about binary numbers?")
@@ -229,10 +237,14 @@ def load_db():
         ),
         curriculum = curr
     )
-    StudentCategory.objects.get_or_create(title="Binary Low", kc=kcs['binary'],
-            upper_score=0.5)
-    StudentCategory.objects.get_or_create(title="Binary High", kc=kcs['binary'],
-            lower_score=0.5)
+    low,c = StudentCategory.objects.get_or_create(title="Binary Low",
+            kc=kcs['binary'], upper_score=0.5)
+    high,c = StudentCategory.objects.get_or_create(title="Binary High",
+            kc=kcs['binary'], lower_score=0.5)
+    low.neighbours.add(high)
+    low.save()
+    high.neighbours.add(low)
+    high.save()
 
     test4 = Test.objects.create(title="Can you see the patterns?")
     test4.questions.add(MultipleChoiceQuestion.factory(
@@ -294,10 +306,14 @@ def load_db():
         ),
         curriculum = curr
     )
-    StudentCategory.objects.get_or_create(title="NimSum Low",
+    low,c = StudentCategory.objects.get_or_create(title="NimSum Low",
             kc=kcs['nimsum'], upper_score=0.5)
-    StudentCategory.objects.get_or_create(title="NimSum High",
+    high,c = StudentCategory.objects.get_or_create(title="NimSum High",
             kc=kcs['nimsum'], lower_score=0.5)
+    low.neighbours.add(high)
+    low.save()
+    high.neighbours.add(low)
+    high.save()
 
     # Save knowledge components
     for kc in kcs:
