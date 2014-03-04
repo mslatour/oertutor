@@ -3,6 +3,7 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver, Signal
 from oertutor.tutor.models import Student, Trial
 from oertutor.ga.models import Population
+from oertutor.tutor.signals import tutor_session_origin
 from oertutor.ga.signals import ga_next_generation, ga_immigrate
 from oertutor.settings import LOG_SIGNALS
 
@@ -16,6 +17,16 @@ def log_error(sender, msg, location):
             module="error"
             student=None
         )
+
+@receiver(tutor_session_origin)
+def log_session_origin(sender, origin, data, student):
+    if LOG_SIGNALS:
+        LogEntry.enter(
+            entry={
+                'origin': origin,
+                'data': data},
+            module='session/origin',
+            student=student)
 
 @receiver(post_save, sender=Student)
 def log_student_model(sender, instance, **kwargs):

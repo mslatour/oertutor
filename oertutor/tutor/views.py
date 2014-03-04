@@ -9,6 +9,7 @@ from django.http import HttpResponse, HttpResponseBadRequest, \
 from decimal import Decimal
 from oertutor.ga.web import *
 from oertutor.tutor.helpers import select_trial
+from oertutor.tutor import signals
 from oertutor.helpers import select_curriculum
 from oertutor.log.models import LogEntry
 import requests, json
@@ -39,12 +40,11 @@ def mt(request):
                 student = Student.by_session(request.session)
                 request.session['origin'] = "aws-mt"
                 request.session['aws_mt_assignmentId'] = assignmentId
-                LogEntry.enter(
-                    entry={
-                        'origin':'aws-mt',
-                        'data': {'hitId':hitId, 'assignmentId': assignmentId }},
-                    module='session/origin',
-                    student=student)
+                signals.tutor_session_origin.send(
+                        sender=request.session,
+                        origin='aws-mt',
+                        data={'hitId':hitId, 'assignmentId': assignmentId },
+                        student=student)
     return HttpResponseRedirect('/tutor/')
 
 def tutor(request):
