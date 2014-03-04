@@ -3,8 +3,15 @@
 
 {% block content %}
 <div class='well'>
+    {% if preview %}
+        <div class="alert alert-info h4" style='color: black'>
+            This is a preview and no actions are possible in this view.
+        </div>
+    {% endif %}
 	<h3>Curriculum: {{ curriculum.title }}</h3>
 	<p>{{ curriculum.description|safe }}</p>
-	<a href='/tutor/next' class='btn btn-primary'>Start</a>
+	{% if not preview %}
+    <a href='/tutor/next' class='btn btn-primary'>Start</a>
+    {% endif %}
 </div>
 {% endblock %}

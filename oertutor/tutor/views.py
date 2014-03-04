@@ -9,13 +9,43 @@ from django.http import HttpResponse, HttpResponseBadRequest, \
 from decimal import Decimal
 from oertutor.ga.web import *
 from oertutor.tutor.helpers import select_trial
+from oertutor.tutor import signals
 from oertutor.helpers import select_curriculum
+from oertutor.log.models import LogEntry
 import requests, json
 import random
 
 from oertutor.settings import FEATURES
 
 from oertutor.tutor.models import *
+
+def mt(request):
+    hitId = request.GET.get('hitId',None)
+    assignmentId = request.GET.get('assignmentId',None)
+    if hitId is not None and assignmentId is not None:
+        if assignmentId == "ASSIGNMENT_ID_NOT_AVAILABLE":
+            curriculum = select_curriculum(request)
+            kcs = KnowledgeComponent.objects.order_by('pk').filter(
+                    curriculum=curriculum)
+            return render(request, 'new.html', {
+                'url': request.build_absolute_uri(),
+                'kcs':kcs,
+                'selected_kc': "start",
+                'progress': 0,
+                'curriculum':curriculum,
+                "preview": True
+            })
+        else:
+            if request.session.get("student", None) is None:
+                student = Student.by_session(request.session)
+                request.session['origin'] = "aws-mt"
+                request.session['aws_mt_assignmentId'] = assignmentId
+                signals.tutor_session_origin.send(
+                        sender=request.session,
+                        origin='aws-mt',
+                        data={'hitId':hitId, 'assignmentId': assignmentId },
+                        student=student)
+    return HttpResponseRedirect('/tutor/')
 
 def tutor(request):
     student = Student.by_session(request.session)

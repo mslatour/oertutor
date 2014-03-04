@@ -17,6 +17,13 @@
     </head>
     <body>
 		<div class="container-fluid">
+        {% if request.session.origin == "aws-mt" %}
+        <div class='row'>
+            <div class='alert alert-info' style='color: black'>
+                It looks like you are participating via <strong>Amazon Mechanical Turk</strong>. You'll be redirected after the last step. Thank you for your time.
+            </div>
+        </div>
+        {% endif %}
 		<div class="row">
 			<div class="col-lg-1 col-md-0 col-sm-0"></div>
 			<div class="col-lg-10 col-md-12 col-sm-12"><div>
@@ -81,11 +88,6 @@
 					</div>
 				</div>
 			</div>
-			<!--<div class='row'>
-				<div class='alert alert-success'>
-					It looks like you are participating via <strong>Mechanical Turk</strong>. You'll be redirected after the last step. Thank you for your time.
-				</div>
-			</div>-->
 			<div class="col-lg-1 col-md-0 col-sm-0"><div>
 		</div>
 		</div>
