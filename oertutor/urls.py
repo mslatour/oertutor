@@ -1,5 +1,4 @@
 from django.conf.urls import patterns, include, url
-from oertutor.views import *
 from oertutor.tutor.views import *
 
 # Uncomment the next two lines to enable the admin:
@@ -7,12 +6,8 @@ from django.contrib import admin
 admin.autodiscover()
 
 urlpatterns = patterns('oertutor.views',
-    url(r'^$', tutor, name='main'),
-    url(r'^mt/?$', mt, name='mt'),
-    url(r'^tutor/$', tutor, name='tutor'),
-    url(r'^tutor/load$', load, name='tutor_load'),
-    url(r'^tutor/forget$', forget, name='tutor_forget'),
-    url(r'^tutor/next$', next_step, name='tutor_next'),
-    url(r'^admin/', include(admin.site.urls)),
-    url(r'^monitor/?', include('oertutor.monitor.urls'))
+    url(r'^$', include('oertutor.tutor.urls')),
+    url(r'^tutor', include('oertutor.tutor.urls')),
+    url(r'^monitor', include('oertutor.monitor.urls')),
+    url(r'^admin/', include(admin.site.urls))
 )

@@ -1,29 +1,18 @@
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import authentication
-from rest_framework import permissions
 from django.shortcuts import render
-from django.http import HttpResponse, HttpResponseBadRequest, \
-    HttpResponseRedirect
+from django.http import HttpResponse, HttpResponseRedirect
 from decimal import Decimal
-from oertutor.ga.web import *
+from oertutor.ga.web import init_population, request_sequence, store_evaluation
 from oertutor.tutor.helpers import select_trial
 from oertutor.tutor import signals
 from oertutor.helpers import select_curriculum
-from oertutor.log.models import LogEntry
-import requests, json
-import random
+from oertutor.tutor.models import KnowledgeComponent, Student, \
+        StudentCategory, Resource
 
-from oertutor.settings import FEATURES
-
-from oertutor.tutor.models import *
-
-def mt(request):
-    hitId = request.GET.get('hitId',None)
-    assignmentId = request.GET.get('assignmentId',None)
-    if hitId is not None and assignmentId is not None:
-        if assignmentId == "ASSIGNMENT_ID_NOT_AVAILABLE":
+def aws_mt(request):
+    hit_id = request.GET.get('hitId', None)
+    assignment_id = request.GET.get('assignmentId', None)
+    if hit_id is not None and assignment_id is not None:
+        if assignment_id == "ASSIGNMENT_ID_NOT_AVAILABLE":
             curriculum = select_curriculum(request)
             kcs = KnowledgeComponent.objects.order_by('pk').filter(
                     curriculum=curriculum)
@@ -39,18 +28,19 @@ def mt(request):
             if request.session.get("student", None) is None:
                 student = Student.by_session(request.session)
                 request.session['origin'] = "aws-mt"
-                request.session['aws_mt_assignmentId'] = assignmentId
+                request.session['aws_mt_assignmentId'] = assignment_id
                 signals.tutor_session_origin.send(
                         sender=request.session,
                         origin='aws-mt',
-                        data={'hitId':hitId, 'assignmentId': assignmentId },
+                        data={'hitId':hit_id, 'assignmentId': assignment_id },
                         student=student)
     return HttpResponseRedirect('/tutor/')
 
 def tutor(request):
     student = Student.by_session(request.session)
     curriculum = select_curriculum(request)
-    kcs = KnowledgeComponent.objects.order_by('pk').filter(curriculum=curriculum)
+    kcs = KnowledgeComponent.objects.order_by('pk').filter(
+            curriculum=curriculum)
     trial = select_trial(student, curriculum)
     if student.phase == Student.DONE:
         progress = 100
@@ -144,7 +134,7 @@ def tutor(request):
             template = "test.html"
         else:
             template = curriculum.exam.template
-        return render(request, template,{
+        return render(request, template, {
             'url': request.build_absolute_uri(),
             'kcs':kcs,
             'selected_kc': "exam",
@@ -183,7 +173,7 @@ def next_step(request):
         elif student.phase == Student.POSTTEST:
             if trial is not None:
                 result = trial.kc.posttest.grade(request.POST, student)
-                trial.posttest_result=result
+                trial.posttest_result = result
                 trial.save()
                 postscore = Decimal(result.score)
                 prescore = Decimal(trial.pretest_result.score)
@@ -207,7 +197,6 @@ def next_step(request):
     elif request.method == "GET":
         if student.phase == Student.NEW:
             if trial is not None:
-                next_kc = trial.kc
                 student.phase = Student.INTRO
                 student.save(update_fields=["phase"])
                 return HttpResponseRedirect('/tutor/')
@@ -244,20 +233,6 @@ def determine_student_category(kc, score, student):
     cat = StudentCategory.objects.filter(kc=kc, lower_score__lte=score,
             upper_score__gt=score)[0]
     return cat
-
-def observation(request):
-    student = Student.by_session(request.session)
-    if request.method == 'POST':
-        for handle in request.POST:
-            if handle in FEATURES:
-                obs, created = Observation.objects.get_or_create(handle=handle)
-                obs.value = request.POST.get(handle)
-                obs.save()
-            else:
-                return HttpResponseBadRequest()
-        return HttpResponse()
-    else:
-        return HttpResponseBadRequest()
 
 def forget(request):
     request.session.clear()

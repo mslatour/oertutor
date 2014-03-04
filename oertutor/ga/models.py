@@ -481,7 +481,6 @@ class Evaluation(models.Model):#{{{
     individual = models.ForeignKey('Individual', related_name='+')
     generation = models.ForeignKey('Generation', related_name='+')
     population = models.ForeignKey('Population', related_name='+')
-    #TODO link to student
     value = models.DecimalField(null=True, max_digits=10, decimal_places=9)
 
     @staticmethod

@@ -163,5 +163,3 @@ LOGGING = {
         },
     }
 }
-
-FEATURES = ['elicitScore', 'lastElicitScoreKC']

@@ -1,5 +1,6 @@
 from copy import copy
-from oertutor.ga.models import Population, Generation, Individual, Chromosome, Gene
+from oertutor.ga.models import Population, Generation, Individual, \
+        Chromosome, Gene
 from oertutor.ga.exceptions import ImpossibleException
 from oertutor.ga.utils import debug, DEBUG_VALUE, DEBUG_STEP
 from oertutor.log import signals
