@@ -1,0 +1,38 @@
+{% load staticfiles %}
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>OER Tutor: GA Monitor</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link href="{% static 'css/bootstrap.superhero.min.css' %}" rel="stylesheet" media="screen">
+        <script src="{% static 'js/jquery.min.js' %}"></script>
+        <script src="{% static 'js/bootstrap.min.js' %}"></script>
+        {% block headinclude %}{% endblock %}
+    </head>
+    <body class="container">
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="page-header h1">Select student</div>
+        </div>
+        <div class="col-lg-12">
+            <table class="table table-bordered table-hover">
+                <thead>
+                    <th>ID</th><th>Started</th>
+                    <th>Updated</th><th>KC</th><th>Phase</th>
+                </thead>
+                <tbody>
+                {% for student in students %}
+                    <tr onclick="document.location='/monitor/student/{{student.id}}'"
+                        style="cursor: pointer" class="h4">
+                        <td>{{student.id}}</td>
+                        <td>{{student.started}}</td>
+                        <td>{{student.updated}}</td>
+                        <td>{{student.kc}}</td>
+                        <td>{{student.phase}}</td>
+                    </tr>
+                </tbody>
+                {% endfor %}
+            </table>
+        </div>
+    </body>
+</html>

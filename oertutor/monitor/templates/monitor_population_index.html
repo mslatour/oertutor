@@ -1,6 +1,5 @@
 {% load staticfiles %}
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
-"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<!DOCTYPE html>
 <html>
     <head>
         <title>OER Tutor: GA Monitor</title>
@@ -19,7 +18,7 @@
             <ul class="nav nav-pills nav-stacked">
             {% for population in populations %}
               <li>
-				  <a href="population/{{population.id}}"
+				  <a href="/monitor/population/{{population.id}}"
                     style='text-style: none; color: white;'>
                     {{population.title}}
                     <span class='badge'>ID: {{population.id}}</span>

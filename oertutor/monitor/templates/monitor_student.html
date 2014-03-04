@@ -1,0 +1,43 @@
+{% load staticfiles %}
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>OER Tutor: GA Monitor</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link href="{% static 'css/bootstrap.superhero.min.css' %}" rel="stylesheet" media="screen">
+        <link href="{% static 'css/ga_monitor.css' %}" rel="stylesheet" media="screen">
+        <script src="{% static 'js/jquery.min.js' %}"></script>
+        <script src="{% static 'js/d3.v3.min.js' %}"></script>
+        <script src="{% static 'js/bootstrap.min.js' %}"></script>
+        {% block headinclude %}{% endblock %}
+    </head>
+    <body class="container">
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="page-header h1">Student trials</div>
+        </div>
+        <div class="col-lg-12">
+            <table class="table table-bordered table-hover">
+                <thead>
+                    <th>ID</th><th>KC</th><th>Category</th>
+                    <th>Pretest</th><th>Posttest</th><th>Sequence</th>
+                    <th>Updated</th>
+                </thead>
+                <tbody>
+                {% for trial in trials %}
+                    <tr class="h4">
+                        <td>{{trial.id}}</td>
+                        <td>{{trial.kc}}</td>
+                        <td>{{trial.category}}</td>
+                        <td>{{trial.pretest}}</td>
+                        <td>{{trial.posttest}}</td>
+                        <td>{{trial.sequence}}</td>
+                        <td>{{trial.updated}}</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    </body>
+</html>

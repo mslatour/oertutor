@@ -13,5 +13,5 @@ urlpatterns = patterns('oertutor.views',
     url(r'^tutor/forget$', forget, name='tutor_forget'),
     url(r'^tutor/next$', next_step, name='tutor_next'),
     url(r'^admin/', include(admin.site.urls)),
-    url(r'^ga/monitor', include('oertutor.ga.monitor.urls'))
+    url(r'^monitor/?', include('oertutor.monitor.urls'))
 )
