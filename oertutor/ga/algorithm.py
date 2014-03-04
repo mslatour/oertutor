@@ -2,6 +2,7 @@ from copy import copy
 from oertutor.ga.models import Population, Generation, Individual, Chromosome, Gene
 from oertutor.ga.exceptions import ImpossibleException
 from oertutor.ga.utils import debug, DEBUG_VALUE, DEBUG_STEP
+from oertutor.log import signals
 
 import random
 
@@ -173,8 +174,11 @@ def mutate(chromosome, population):
             try:
                 chromosome = Chromosome.get_by_genes(mutation)
                 chromosome.parents.add(chromosome)
-            except ValueError as err:
-                print err
+            except ValueError as error:
+                signals.err.send(
+                    sender=error,
+                    msg=error.strerror,
+                    location="ga.algorithm.mutate")
             except ImpossibleException:
                 # No match found
                 return Chromosome.factory(mutation, [chromosome])
@@ -296,8 +300,11 @@ def crossover(parent1, parent2, population):
                         chromosome = Chromosome.get_by_genes(child)
                         chromosome.parents.add(parent1)
                         chromosome.parents.add(parent2)
-                    except ValueError as err:
-                        print err
+                    except ValueError as error:
+                        signals.err.send(
+                            sender=error,
+                            msg=error.strerror,
+                            location="ga.algorithm.crossover")
                     except ImpossibleException:
                         # No match found
                         chromosome = Chromosome.factory(child,

@@ -668,11 +668,11 @@ class Generation(models.Model):#{{{
                 sorted_members = sorted(members, key=
                     lambda x: (x.fitness + (1/x.age)) if x.age > 0 else 'Inf',
                     reverse=True)
-            except Exception as e:
-                print members
-                for member in members:
-                    print member.pk, member.age, member.fitness, member.individual
-                raise e
+            except Exception as error:
+                signals.err.send(
+                    sender=error,
+                    msg=error.strerror,
+                    location="ga.models.generation.select_next_individual")
             return sorted_members[0].individual
 
     def fitness(self, individual, fitness=None):
