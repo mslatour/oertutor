@@ -10,7 +10,7 @@ from oertutor.settings import LOG_SIGNALS
 err = Signal(providing_args=["msg","location"])
 
 @receiver(err)
-def log_error(sender, msg, location):
+def log_error(sender, msg, location, **kwargs):
     if LOG_SIGNALS:
         LogEntry.enter(
             entry={"class": type(sender), "msg": msg, "location": location},
@@ -19,7 +19,7 @@ def log_error(sender, msg, location):
         )
 
 @receiver(tutor_session_origin)
-def log_session_origin(sender, origin, data, student):
+def log_session_origin(sender, origin, data, student, **kwargs):
     if LOG_SIGNALS:
         LogEntry.enter(
             entry={
