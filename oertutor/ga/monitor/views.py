@@ -24,7 +24,7 @@ def population_index(request):
 
 def population(request, pop_id):
     population = Population.objects.get(pk=pop_id)
-    data = {'generations':[]}
+    data = {'generations':[], 'regret_data': []}
     for i, generation in enumerate(population.generations.all()):
         data['generations'].append({
             'id': generation.pk,
@@ -48,6 +48,8 @@ def population(request, pop_id):
                     data['generations'][i]['individuals'][j]['genes'].append(
                         {'id': gene.pk, 'title': resource.title, 'link':resource.source}
                     )
+    for evaluation in Evaluation.objects.filter(population=population):
+        data['regret_data'].append(1-evaluation.value)
     return render(request, 'ga_monitor_population.html',data)
 
 def student(request):
