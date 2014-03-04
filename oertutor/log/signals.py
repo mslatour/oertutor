@@ -1,10 +1,21 @@
 from oertutor.log.models import LogEntry
 from django.db.models.signals import post_save
-from django.dispatch import receiver
+from django.dispatch import receiver, Signal
 from oertutor.tutor.models import Student, Trial
 from oertutor.ga.models import Population
 from oertutor.ga.signals import ga_next_generation, ga_immigrate
 from oertutor.settings import LOG_SIGNALS
+
+err = Signal(providing_args=["msg","location"])
+
+@receiver(err)
+def log_error(sender, msg, location):
+    if LOG_SIGNALS:
+        LogEntry.enter(
+            entry={"class": type(sender), "msg": msg, "location": location},
+            module="error"
+            student=None
+        )
 
 @receiver(post_save, sender=Student)
 def log_student_model(sender, instance, **kwargs):
