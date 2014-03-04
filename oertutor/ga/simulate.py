@@ -366,7 +366,7 @@ class SimulationSuite:
                             debug_mode)
                     del population
                     reset_queries()
-                    clear(False)
+                    #clear(False)
                 debug('Combining %d repetitions' % (repetitions, ),
                         debug_mode & DEBUG_SUITE)
                 for analyzer in self.results[environment]:

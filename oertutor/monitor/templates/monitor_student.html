@@ -28,12 +28,39 @@
                     <tr class="h4">
                         <td>{{trial.id}}</td>
                         <td>{{trial.kc}}</td>
-                        <td>{{trial.category}}</td>
+                        <td>
+                            {% if trial.category %}
+                            <a href="/monitor/population/{{trial.category.id}}">
+                                {{ trial.category }}
+                            </a>
+                            {% else %}
+                            None
+                            {% endif %}
+                        </td>
                         <td>{{trial.pretest}}</td>
                         <td>{{trial.posttest}}</td>
                         <td>{{trial.sequence}}</td>
                         <td>{{trial.updated}}</td>
                     </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div class="col-lg-12">
+            <div class="page-header h1">Student log entries</div>
+        </div>
+        <div class="col-lg-12">
+            <table class="table table-bordered table-hover">
+                <thead>
+                    <th>ID</th><th>Entry</th><th>Module</th><th>Datetime</th>
+                <thead>
+                <tbody>
+                {% for entry in log_entries %}
+                    <tr class="h4">
+                        <td>{{ entry.id }}</td>
+                        <td><kbd>{{ entry.entry }}</kbd></td>
+                        <td>{{ entry.module }}</td>
+                        <td>{{ entry.datetime }}</td>
                 {% endfor %}
                 </tbody>
             </table>
