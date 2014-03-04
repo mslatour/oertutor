@@ -14,7 +14,7 @@ def log_error(sender, msg, location):
     if LOG_SIGNALS:
         LogEntry.enter(
             entry={"class": type(sender), "msg": msg, "location": location},
-            module="error"
+            module="error",
             student=None
         )
 
