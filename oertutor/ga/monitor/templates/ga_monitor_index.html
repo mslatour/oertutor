@@ -1,0 +1,35 @@
+{% load staticfiles %}
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html>
+    <head>
+        <title>OER Tutor: GA Monitor</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link href="{% static 'css/bootstrap.superhero.min.css' %}" rel="stylesheet" media="screen">
+        <script src="{% static 'js/jquery.min.js' %}"></script>
+        <script src="{% static 'js/bootstrap.min.js' %}"></script>
+        {% block headinclude %}{% endblock %}
+    </head>
+    <body class="container">
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="page-header h1">Select view</div>
+        </div>
+        <div class="col-lg-12">
+            <ul class="nav nav-pills nav-stacked">
+              <li>
+                <a href="population"
+                    style='text-style: none; color: white;'>
+                    Population
+                </a>
+              </li>
+              <li>
+                <a href="student"
+                    style='text-style: none; color: white;'>
+                    Student
+                </a>
+              </li>
+            </ul>
+        </div>
+    </body>
+</html>
