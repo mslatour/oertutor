@@ -1,6 +1,7 @@
 from django.shortcuts import render
 from oertutor.ga.models import *
 from oertutor.tutor.models import Resource, StudentCategory, Student, Trial
+from oertutor.log.models import LogEntry
 
 def index(request):
     return render(request, 'monitor_index.html',{})
@@ -57,12 +58,13 @@ def student_index(request):
     phase_dict = dict(Student.PHASES)
     for student in Student.objects.all():
         trial = Trial.objects.filter(student=student, posttest_result=None)
+        print trial
         data['students'].append({
             "id": student.pk,
             "started": student.started,
             "updated": student.updated,
             "phase": phase_dict[student.phase],
-            "kc": (str(trial[0].kc) if trial is not None else None)
+            "kc": (str(trial[0].kc) if trial else None)
         })
     return render(request, 'monitor_student_index.html', data)
 
@@ -73,7 +75,7 @@ def student(request, student_id):
         data['trials'].append({
             "id": trial.pk,
             "kc": str(trial.kc),
-            "category": str(trial.category),
+            "category": trial.category,
             "pretest": (trial.pretest_result.score if
                 trial.pretest_result is not None else None),
             "posttest": (trial.posttest_result.score if
@@ -82,4 +84,10 @@ def student(request, student_id):
                 trial.sequence is not None else None),
             "updated": trial.datetime
         })
+    data['log_entries'] = LogEntry.objects.order_by('-pk').filter(
+            student=student)
     return render(request, "monitor_student.html", data)
+
+def log(request):
+    entries = LogEntry.objects.order_by('-pk').all()
+    return render(request, 'monitor_log.html', {'log_entries':entries})
