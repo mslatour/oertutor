@@ -129,6 +129,7 @@ INSTALLED_APPS = (
     # 'django.contrib.admindocs',
     'oertutor.tutor',
     'oertutor.ga',
+    'oertutor.ga.monitor',
     'oertutor.log'
 )
 
