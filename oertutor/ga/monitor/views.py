@@ -42,11 +42,11 @@ def population(request, pop_id):
                     resource = gene.resource
                 except Resource.DoesNotExist:
                     data['generations'][i]['individuals'][j]['genes'].append(
-                        {'title': 'Gene %d' % (gene.pk,), 'link':None}
+                        {'id': gene.pk, 'title': 'Gene %d' % (gene.pk,), 'link':None}
                     )
                 else:
                     data['generations'][i]['individuals'][j]['genes'].append(
-                        {'title': resource.title, 'link':resource.source}
+                        {'id': gene.pk, 'title': resource.title, 'link':resource.source}
                     )
     return render(request, 'ga_monitor_population.html',data)
 
