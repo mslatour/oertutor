@@ -6,7 +6,9 @@
         <title>OER Tutor: GA Monitor</title>
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <link href="{% static 'css/bootstrap.superhero.min.css' %}" rel="stylesheet" media="screen">
+        <link href="{% static 'css/ga_monitor.css' %}" rel="stylesheet" media="screen">
         <script src="{% static 'js/jquery.min.js' %}"></script>
+        <script src="{% static 'js/d3.v3.min.js' %}"></script>
         <script src="{% static 'js/bootstrap.min.js' %}"></script>
         {% block headinclude %}{% endblock %}
     </head>
@@ -79,5 +81,85 @@
             {% endfor %}
             </div>
         </div>
+        <div class="col-lg-12">
+            <div class="page-header h1">Cumulative Regret</div>
+        </div>
+        <div class="col-lg-12">
+			<div class="well" id="regret-function">
+		<script>
+		var margin = {top: 20, right: 20, bottom: 30, left: 50},
+			width = 960 - margin.left - margin.right,
+			height = 500 - margin.top - margin.bottom;
+
+		var x = d3.scale.linear()
+			.range([0, width]);
+
+		var y = d3.scale.linear()
+			.range([height, 0]);
+
+		var xAxis = d3.svg.axis()
+			.scale(x)
+			.orient("bottom");
+
+		var yAxis = d3.svg.axis()
+			.scale(y)
+			.orient("left");
+
+		var line = d3.svg.line()
+			.x(function(d) { return x(d.evaluation); })
+			.y(function(d) { return y(d.regret); });
+
+		var svg = d3.select("#regret-function").append("svg")
+			.attr("width", width + margin.left + margin.right)
+			.attr("height", height + margin.top + margin.bottom)
+		  .append("g")
+			.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+		data = [
+		{% for regret in regret_data %}
+		{% if forloop.last %}
+			{"evaluation": {{ forloop.counter }}, regret: {{ regret }}}
+		{% else %}
+			{"evaluation": {{ forloop.counter }}, regret: {{ regret }}},
+		{% endif %}
+		{% endfor %}
+		];
+		cumul = 0.0
+		data.forEach(function(d) {
+			d.regret = cumul+d.regret;
+			cumul = d.regret
+		});
+
+		x.domain(d3.extent(data, function(d) { return d.evaluation; }));
+		y.domain(d3.extent(data, function(d) { return d.regret; }));
+
+		svg.append("g")
+		  .attr("class", "x axis")
+		  .attr("transform", "translate(0," + height + ")")
+		  .call(xAxis)
+		.append("text")
+		  .style("text-anchor", "end")
+		  .attr("x", width)
+		  .attr("dy", "-.71em")
+		  .text("Evaluation");
+
+		svg.append("g")
+		  .attr("class", "y axis")
+		  .call(yAxis)
+		.append("text")
+		  .attr("transform", "rotate(-90)")
+		  .attr("y", 6)
+		  .attr("dy", ".71em")
+		  .style("text-anchor", "end")
+		  .text("Cumulative Regret");
+
+		svg.append("path")
+		  .datum(data)
+		  .attr("class", "line")
+		  .attr("d", line);
+		</script>
+
+        </div>
+	</div>
     </body>
 </html>
