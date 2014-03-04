@@ -8,6 +8,7 @@ admin.autodiscover()
 
 urlpatterns = patterns('oertutor.views',
     url(r'^$', tutor, name='main'),
+    url(r'^mt/?$', mt, name='mt'),
     url(r'^tutor/$', tutor, name='tutor'),
     url(r'^tutor/load$', load, name='tutor_load'),
     url(r'^tutor/forget$', forget, name='tutor_forget'),

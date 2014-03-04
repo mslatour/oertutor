@@ -6,7 +6,18 @@
 	<div class="panel-heading h4">Done</div>
 	<div class='panel-body well' style='padding-top:0'>
 		<h2>Excellent, you finished the lessons!</h2>
+        {% if request.session.origin == "aws-mt" %}
+        <form action='http://www.mturk.com/mturk/externalSubmit' method='POST'>
+            <input type='hidden' name='assignmentId'
+             value='{{request.session.aws_mt_assignmentId}}' />
+            <input type='hidden' name='student' value='{{request.student}}'/>
+            <button type='submit' class='btn btn-primary'>
+                Return to Mechanical Turk
+            </button>
+        </form>
+        {% else %}
 		<p>Thank you for participating, and happy Nim playing.</p>
+        {% endif %}
 	</div>
 </div>
 {% endblock %}
