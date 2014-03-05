@@ -37,6 +37,9 @@ def init_population(num, population=None, genes=None):
             genes = population.pool
         else:
             genes = Gene.objects.all()
+    if population is None:
+        population = Population.objects.create(pool=genes)
+
     individuals = []
     # Mapping to lookup chromosomes by its gene member
     chromosomes_gene_map = {}
@@ -45,7 +48,7 @@ def init_population(num, population=None, genes=None):
     if len(genes) <= num:
         # Include each gene at least ones in the population
         for gene in genes:
-            chromosome = Chromosome.factory([gene])
+            chromosome = Chromosome.factory([gene], population)
             chromosomes_gene_map[gene] = chromosome
             individuals.append(Individual.factory(chromosome))
         # Substract the number of added genes of the total number of
@@ -66,7 +69,7 @@ def init_population(num, population=None, genes=None):
                     individuals.append(Individual.factory(
                         chromosomes_gene_map[gene]))
                 else:
-                    chromosome = Chromosome.factory([gene])
+                    chromosome = Chromosome.factory([gene], population)
                     chromosomes_gene_map[gene] = chromosome
                     individuals.append(Individual.factory(chromosome))
         # If the sum is above zero, take sample according to the distribution
@@ -91,18 +94,14 @@ def init_population(num, population=None, genes=None):
                     individuals.append(Individual.factory(
                         chromosomes_gene_map[pick]))
                 else:
-                    chromosome = Chromosome.factory([pick])
+                    chromosome = Chromosome.factory([pick], population)
                     chromosomes_gene_map[pick] = chromosome
                     individuals.append(Individual.factory(chromosome))
         else:
             raise ValueError('Sum of gene apriori values was negative.')
-    # Create and return a new population with an initial generation containing
-    # the sampled chromosomes.
-    if population is None:
-        return Population.factory(individuals)
-    else:
-        Generation.factory(individuals, population)
-        return population
+    # Add an initial generation to the population containing the sampled chromosomes.
+    Generation.factory(individuals, population)
+    return population
 
 def switch_generations(num_pop, num_elite, p_mutate, population, DEBUG=0x0):
     # Fetch current generation
@@ -173,7 +172,7 @@ def mutate(chromosome, population):
             functions.remove(func)
         else:
             try:
-                chromosome = Chromosome.get_by_genes(mutation)
+                chromosome = Chromosome.get_by_genes(mutation, population)
                 chromosome.parents.add(chromosome)
             except ValueError as error:
                 signals.err.send(
@@ -182,7 +181,7 @@ def mutate(chromosome, population):
                     location="ga.algorithm.mutate")
             except ImpossibleException:
                 # No match found
-                return Chromosome.factory(mutation, [chromosome])
+                return Chromosome.factory(mutation, population, [chromosome])
             else:
                 return chromosome
     raise ImpossibleException
@@ -298,7 +297,7 @@ def crossover(parent1, parent2, population):
             for child in childs:
                 if tuple(child) not in mapped:
                     try:
-                        chromosome = Chromosome.get_by_genes(child)
+                        chromosome = Chromosome.get_by_genes(child, population)
                         chromosome.parents.add(parent1)
                         chromosome.parents.add(parent2)
                     except ValueError as error:
@@ -309,7 +308,7 @@ def crossover(parent1, parent2, population):
                     except ImpossibleException:
                         # No match found
                         chromosome = Chromosome.factory(child,
-                                [parent1, parent2])
+                                population, [parent1, parent2])
                         mapped[tuple(child)] = chromosome
                         chromosomes.append(chromosome)
                     else:

@@ -58,7 +58,6 @@ def student_index(request):
     phase_dict = dict(Student.PHASES)
     for student in Student.objects.all():
         trial = Trial.objects.filter(student=student, posttest_result=None)
-        print trial
         data['students'].append({
             "id": student.pk,
             "started": student.started,
