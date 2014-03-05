@@ -10,7 +10,7 @@ class Migration(SchemaMigration):
     def forwards(self, orm):
         # Adding field 'Chromosome.population'
         db.add_column(u'ga_chromosome', 'population',
-                      self.gf('django.db.models.fields.related.ForeignKey')(related_name='chromosomes', to=orm['ga.Population']),
+                      self.gf('django.db.models.fields.related.ForeignKey')(default=1,related_name='chromosomes', to=orm['ga.Population']),
                       keep_default=False)
 
 
