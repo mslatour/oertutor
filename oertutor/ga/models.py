@@ -84,11 +84,12 @@ class Chromosome(models.Model):#{{{
     genes = models.ManyToManyField('Gene', through='ChromosomeMembership',
             related_name='chromosomes')
     parents = models.ManyToManyField('self', related_name='children')
+    population = models.ForeignKey('Population', related_name='chromosomes')
     fitness = models.DecimalField(null=True, max_digits=10, decimal_places=9)
     age = models.PositiveIntegerField(default=0)
 
     @staticmethod
-    def factory(genes, parents=None):
+    def factory(genes, population, parents=None):
         """
         Factory takes a list of genes as input and returns a chromosome
         instance that contains the provided genes. The genes are stored in the
@@ -103,7 +104,7 @@ class Chromosome(models.Model):#{{{
         Returns:
           The created chromosome.
         """
-        chromosome = Chromosome.objects.create(age=0)
+        chromosome = Chromosome.objects.create(age=0, population=population)
         for index, gene in enumerate(genes):
             ChromosomeMembership.objects.create(
                     gene = gene,
@@ -116,7 +117,7 @@ class Chromosome(models.Model):#{{{
         return chromosome
 
     @staticmethod
-    def get_by_genes(genes):
+    def get_by_genes(genes, population):
         """
         Lookup the chromosome instance that has the given list of genes. In
         order to be a match, a chromosome need to have the exact same genes on
@@ -148,7 +149,8 @@ class Chromosome(models.Model):#{{{
         # Make sure no supersets are kept
         length = len(genes)
         shortlist = filter(lambda x: len(x)==length, shortlist)
-        #TODO: ensure that the chromosomes exist in this population
+        # Ensure that the chromosomes exist in this population
+        shortlist = filter(lambda x: x.population==population, shortlist)
         # If there are no lookalikes left that met every criteria
         if len(shortlist) == 0:
             raise ImpossibleException('No matches found.')
@@ -195,6 +197,8 @@ class Chromosome(models.Model):#{{{
         # Make sure no supersets are kept
         length = len(members)
         lookalikes = filter(lambda x: len(x)==length, shortlist)
+        # Ensure that the chromosomes exist in this population
+        lookalikes = filter(lambda x: x.population==population, lookalikes)
         # If there are no lookalikes left that met every criteria
         if len(lookalikes) == 0:
             raise ImpossibleException('No lookalikes found.')
@@ -352,7 +356,8 @@ class Chromosome(models.Model):#{{{
 
     def __copy__(self):
         # Create a chromosome with the same age
-        copy = Chromosome.objects.create(age=self.age, fitness=self.fitness)
+        copy = Chromosome.objects.create(age=self.age, fitness=self.fitness,
+                population=self.population)
         # Add the same genes to the new chromosome
         for member in ChromosomeMembership.objects.filter(chromosome=self):
             ChromosomeMembership.objects.create(
@@ -365,8 +370,10 @@ class Chromosome(models.Model):#{{{
             copy.parents.add(parent)
         return copy
 
-    def __deepcopy__(self):
-        return self.__copy__()
+    def __deepcopy__(self, memo):
+        copy = self.__copy__()
+        memo[id(self)] = copy
+        return copy
 
     def __str__(self):
         return self.__repr__()
@@ -470,8 +477,11 @@ class Individual(models.Model):#{{{
     def __repr__(self):
         return "%d::{%s}" % (self.pk, self.chromosome)
 
-    def __deepcopy__(self):
-        return Individual.factory(deepcopy(self.chromosome))
+    def __deepcopy__(self, memo):
+        chromosome_copy = deepcopy(self.chromosome, memo)
+        individual_copy = Individual.factory(chromosome_copy)
+        memo[id(self)] = individual_copy
+        return individual_copy
 
     def __copy__(self):
         return Individual.factory(self.chromosome)#}}}
@@ -481,7 +491,6 @@ class Evaluation(models.Model):#{{{
     individual = models.ForeignKey('Individual', related_name='+')
     generation = models.ForeignKey('Generation', related_name='+')
     population = models.ForeignKey('Population', related_name='+')
-    #TODO link to student
     value = models.DecimalField(null=True, max_digits=10, decimal_places=9)
 
     @staticmethod
@@ -783,17 +792,21 @@ class Population(models.Model):#{{{
         """
         # Select immigrant according to the PDF based on the fitness values
         immigrant = pdf_sample(1, immigrants,
-                lambda x: max(x.fitness(),0))
+                lambda x: max(x.fitness(),0))[0]
         # Select current generation
         generation = self.current_generation()
         # Select worst individual in that generation
         worst_individual = generation.select_worst_individuals()
         # Remove the worst individual from the generation
         generation.delete_individual(worst_individual)
+        # Prepare integration of immigrant
+        immigrant = deepcopy(immigrant)
+        immigrant.chromosome.population = self
+        immigrant.chromosome.save()
         # Immigrate the picked immigrant
-        generation.add_individuals(immigrant)
+        generation.add_individuals([immigrant])
         signals.ga_immigrate.send(sender=self, generation=generation,
-                worst_individual=worst_individual, immigrant=immigrant[0])
+                worst_individual=worst_individual, immigrant=immigrant)
 
     def migrate(self):
         """
