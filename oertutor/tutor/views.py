@@ -7,6 +7,7 @@ from oertutor.tutor import signals
 from oertutor.helpers import select_curriculum
 from oertutor.tutor.models import KnowledgeComponent, Student, \
         StudentCategory, Resource
+from django.forms.models import modelform_factory
 
 def aws_mt(request):
     hit_id = request.GET.get('hitId', None)
@@ -194,6 +195,13 @@ def next_step(request):
                 student.phase = Student.DONE
                 student.save(update_fields=["phase"])
                 return HttpResponseRedirect('/tutor')
+        elif student.phase == Student.DONE:
+            Form = modelform_factory(
+                Student,
+                fields=("preskill","postskill","comments"))
+            form = Form(request.POST, instance=student)
+            form.save()
+            return HttpResponseRedirect('/tutor')
     elif request.method == "GET":
         if student.phase == Student.NEW:
             if trial is not None:
