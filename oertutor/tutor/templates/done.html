@@ -11,12 +11,145 @@
             <input type='hidden' name='assignmentId'
              value='{{request.session.aws_mt_assignmentId}}' />
             <input type='hidden' name='student' value='{{request.student}}'/>
-            <button type='submit' class='btn btn-primary'>
+		{% else %}
+		<script>
+			function ajax_form(form, cb){
+				$.ajaxSetup({ crossDomain: false, });
+				$.ajax({
+					'url': form.action,
+					'data': $(form).serialize(),
+					'type': form.method.toUpperCase(),
+					'context': form
+				}).always(cb)
+				return false
+			}
+			function swap(obj1, obj2){
+				$(obj1).hide()
+				$(obj2).show()
+			}
+		</script>
+		<div style='display: none' id='thx'>
+			<div class='alert alert-info lead'>
+				Thank you for your feedback, and happy Nim playing!
+			</div>
+		</div>
+		<form action='/tutor/next'
+			onsubmit='return ajax_form(this, function(){ swap(this, "#thx");});'
+			method='POST'>
+			{% csrf_token %}
+		{% endif %}
+		<div class="form-group">
+			<label for="preskill">
+				<h4>How good were you at Nim before these lessons?</h4>
+			</label>
+			<div class='row'>
+				<div class="col-lg-4 col-md-6 col-sm-12 col-xs-12">
+					<label style='width: 100%; display: block;'>
+						<div class='row'>
+							<div class='col-lg-3 col-md-3 col-sm-3 col-xs-3'>
+								<input type='radio' class='form-control input-md'
+								 name="preskill" value="0" />
+							</div>
+							<div class='col-lg-9 col-md-9 col-sm-9 col-xs-9'>
+								<div class='lead'>I could not play it at all.</div>
+							</div>
+						</div>
+					</label>
+				</div>
+				<div class="col-lg-4 col-md-6 col-sm-12 col-xs-12">
+					<label style='width: 100%; display: block;'>
+						<div class='row'>
+							<div class='col-lg-3 col-md-3 col-sm-3 col-xs-3'>
+								<input type='radio' class='form-control input-md'
+								 name="preskill" value="1" />
+							</div>
+							<div class='col-lg-9 col-md-9 col-sm-9 col-xs-9'>
+								<div class='lead'>I could play it a little bit.</div>
+							</div>
+						</div>
+					</label>
+				</div>
+				<div class="col-lg-4 col-md-6 col-sm-12 col-xs-12">
+					<label style='width: 100%; display: block;'>
+						<div class='row'>
+							<div class='col-lg-3 col-md-3 col-sm-3 col-xs-3'>
+								<input type='radio' class='form-control input-md'
+								 name="preskill" value="2" />
+							</div>
+							<div class='col-lg-9 col-md-9 col-sm-9 col-xs-9'>
+								<div class='lead'>I could play it very well.</div>
+							</div>
+						</div>
+					</label>
+				</div>
+			</div>
+		</div>
+		<div class="form-group">
+			<label for="postskill">
+				<h4>How good do you think you are after these lessons?</h4>
+			</label>
+			<div class='row'>
+				<div class="col-lg-4 col-md-6 col-sm-12 col-xs-12">
+					<label style='width: 100%; display: block;'>
+						<div class='row'>
+							<div class='col-lg-3 col-md-3 col-sm-3 col-xs-3'>
+								<input type='radio' class='form-control input-md'
+								 name="postskill" value="0" />
+							</div>
+							<div class='col-lg-9 col-md-9 col-sm-9 col-xs-9'>
+								<div class='lead'>I cannot play it at all.</div>
+							</div>
+						</div>
+					</label>
+				</div>
+				<div class="col-lg-4 col-md-6 col-sm-12 col-xs-12">
+					<label style='width: 100%; display: block;'>
+						<div class='row'>
+							<div class='col-lg-3 col-md-3 col-sm-3 col-xs-3'>
+								<input type='radio' class='form-control input-md'
+								 name="postskill" value="1" />
+							</div>
+							<div class='col-lg-9 col-md-9 col-sm-9 col-xs-9'>
+								<div class='lead'>I can play it a little bit.</div>
+							</div>
+						</div>
+					</label>
+				</div>
+				<div class="col-lg-4 col-md-6 col-sm-12 col-xs-12">
+					<label style='width: 100%; display: block;'>
+						<div class='row'>
+							<div class='col-lg-3 col-md-3 col-sm-3 col-xs-3'>
+								<input type='radio' class='form-control input-md'
+								 name="postskill" value="2" />
+							</div>
+							<div class='col-lg-9 col-md-9 col-sm-9 col-xs-9'>
+								<div class='lead'>I can play it very well.</div>
+							</div>
+						</div>
+					</label>
+				</div>
+			</div>
+		</div>
+		<div class="form-group">
+			<label for="postskill">
+				<h4>Do you have any last comments you whish to make?</h4>
+			</label>
+			<div class='row'>
+				<div class='col-lg-12'>
+					<textarea class="form-control" name='comments'></textarea>
+				</div>
+			</div>
+		</div>
+        {% if request.session.origin == "aws-mt" %}
+            <button type='submit' class='btn btn-lg btn-primary'>
                 Return to Mechanical Turk
             </button>
         </form>
-        {% else %}
-		<p>Thank you for participating, and happy Nim playing.</p>
+		{% else %}
+            <button type='submit' class='btn btn-lg btn-primary'>
+                Send feedback
+            </button>
+        </form>
         {% endif %}
 	</div>
 </div>

@@ -24,6 +24,9 @@ class Student(models.Model):
     phase = models.CharField(max_length=4, choices=PHASES, default=NEW)
     started = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
+    preskill = models.SmallIntegerField(null=True, blank=True)
+    postskill = models.SmallIntegerField(null=True, blank=True)
+    comments = models.TextField(null=True, blank=True)
 
     @staticmethod
     def by_session(session):
