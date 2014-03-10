@@ -108,8 +108,7 @@
 		</div>
 		<div id="test-submit" class='alert alert-info'
 			style='display: none'>
-			<p class="lead">You are all done. What an excellent
-			performance!</p>
+			<p class="lead">You are all done!</p>
 			<form action="/tutor/next" method="post">
 				{% csrf_token %}
 				{% for q in questions %}
@@ -117,7 +116,7 @@
 					id="{{ q.handle }}" value="" />
 				{% endfor %}
 				<button class='btn btn-default' type='submit'>
-					Click here to finish
+					Click here to wrap up.
 				</button>
 			</form>
 		</div>
