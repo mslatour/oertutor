@@ -227,8 +227,10 @@ def load_db():
         description = (
             "Now that we have some intuition about how to play the game, let's "
             "prepare ourselves for the ultimate strategy that you'll learn in "
-            "the last step. But before you can learn that, you'll need to know"
-            " a thing or two about binary numbers. So let's get started!"
+            "the last step. The winning strategy takes advantages of patterns "
+            "in the nim stacks. These patterns show themselves when you write "
+            "the stacks down as binary numbers. So let's first learn a thing "
+            "or two about how to do that."
             "<br /><br />"
             "As with each topic, you'll be asked some questions to determine "
             "what you already knew about the topic. Then the rules will be "
