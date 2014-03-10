@@ -9,3 +9,4 @@ wsgiref==0.1.2
 pytz==2012c
 psycopg2==2.5
 South==0.8.1
+dj-static==0.0.5
