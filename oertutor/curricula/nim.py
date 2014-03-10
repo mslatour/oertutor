@@ -272,7 +272,7 @@ def load_db():
             ("2", "Two objects."),
             ("4", "Four objects."),
             ("6", "Six objects."),
-            ("any", "Any stack will do."))))
+            ("8", "Eight objects."))))
     test4.questions.add(MultipleChoiceQuestion.factory(
         handle='q3',
         question="On the table are five stacks. The first stack has 9\
