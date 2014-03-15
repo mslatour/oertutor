@@ -412,6 +412,12 @@ def load_db():
     )
 
     Resource.factory(
+        title = "Walkthrough of pair canceling",
+        source = "/static/html/oer_nim_pair_canceling_3.html",
+        kc = kcs['nimsum']
+    )
+
+    Resource.factory(
         title = "An example of pair canceling",
         source = "/static/html/oer_nim_xor_1.html",
         kc = kcs['nimsum']
