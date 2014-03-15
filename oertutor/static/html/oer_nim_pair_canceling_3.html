@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>OER Nim Pair Canceling 3</title>
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<link href="/static/css/bootstrap.superhero.min.css" rel="stylesheet" media="screen">
+		<link href="/static/css/nim.css" rel="stylesheet" media="screen">
+        <script src="/static/js/jquery.min.js"></script>
+		<script src="/static/js/nim.js"></script>
+    </head>
+    <body class="well">
+		<script>
+			function init(stacks, container){
+				opt = {
+					"container" : $(container)[0],
+					"stacks": stacks,
+					"interactive": false,
+					"cb_finished": function(){}
+				}
+				game = new NimGame(opt);
+				$(container).find("#nim-msg").addClass("hidden")
+			}
+			function init_all(){
+				init([3,4,5], '#nim-example-1')
+				init([2,4,5,5], '#nim-example-2')
+			}
+			$(function(){ init_all(); })
+		</script>
+		<div class="container">
+        <p class="lead">
+            The winning strategy is for a player to always leave an even total
+			number of occurences of each power of two.
+        </p>
+        <div class="panel panel-default">
+			<div class="panel-heading">Step by step</div>
+			<div class="panel-body">
+				<ol>
+					<li>
+						Write down the number of objects in each stack
+						underneath each other in their binary representation,
+						such that each column of digits represents the same
+						power of two.
+					</li>
+					<li>
+						Count the total number of 1's in each column.
+					</li>
+					<li>
+						The goal is to make sure that after you made your move,
+						all columns have an even total number of 1's.
+					</li>
+					<li>
+					    Return to step 1, until the game ends.
+					</li>
+				</ol>
+			</div>
+		</div>
+        <div class="panel panel-default">
+			<div class="panel-heading">Example 1</div>
+		<div class="panel-body">
+			<p>There are three stacks of sizes: 3,4 and 5.</p>
+			<div id="nim-example-1" style='margin-bottom: 5px;'></div>
+			<p>The first two steps
+			are to write the binary representations underneath each other and
+			count the number of ones in each column.</p>
+			<table class="table table-striped table-hover" style='max-width:
+				400px'>
+				<thead>
+					<th style='border-right: thin solid white'>Stack</th>
+					<th>8  <i>(2<sup>3</sup>)</i></th>
+					<th>4  <i>(2<sup>2</sup>)</i></th>
+					<th>2  <i>(2<sup>1</sup>)</i></th>
+					<th>1  <i>(2<sup>0</sup>)</i></th>
+				</thead>
+				<tbody>
+					<tr>
+						<td style='border-right: thin solid white'>3</td>
+						<td>0</td><td>0</td><td>1</td><td>1</td>
+					</tr>
+					<tr>
+						<td style='border-right: thin solid white'>4</td>
+						<td>0</td><td>1</td><td>0</td><td>0</td>
+					</tr>
+					<tr>
+						<td style='border-right: thin solid white'>5</td>
+						<td>0</td><td>1</td><td>0</td><td>1</td>
+					</tr>
+					<tr>
+						<td style='border-top: thin solid white'><b>Count:</b></td>
+						<td style='border-top: thin solid white'><b>0</b></td>
+						<td style='border-top: thin solid white'><b>2</b></td>
+						<td style='border-top: thin solid white'><b>1</b></td>
+						<td style='border-top: thin solid white'><b>2</b></td>
+					</tr>
+				</tbody>
+			</table>
+			<p>Now for the third step. The column
+			<kbd>2<i>(2<sup>1</sup>)</i></kbd> is the only one
+			with an odd number of ones. Remember we can only take away objects, and only from a single
+			stack. The only way to make all column totals even is to remove a one from
+			the <kbd>2<i>(2<sup>1</sup>)</i></kbd> column. Each one in that column
+			represents two objects. The only stack that has a one in that
+			column is the first stack with three objects. The player should
+			take two objects from the first stack.
+			</p>
+		</div>
+		</div>
+        <div class="panel panel-default">
+			<div class="panel-heading">Example 2</div>
+		<div class="panel-body">
+			<p>There are four stacks of sizes: 2,4,5 and 5.</p>
+			<div id="nim-example-2" style='margin-bottom: 5px;'></div>
+			<p>The first two steps
+			are to write the binary representations underneath each other and
+			count the number of ones in each column.</p>
+			<table class="table table-striped table-hover" style='max-width:
+				400px'>
+				<thead>
+					<th style='border-right: thin solid white'>Stack</th>
+					<th>8  <i>(2<sup>3</sup>)</i></th>
+					<th>4  <i>(2<sup>2</sup>)</i></th>
+					<th>2  <i>(2<sup>1</sup>)</i></th>
+					<th>1  <i>(2<sup>0</sup>)</i></th>
+				</thead>
+				<tbody>
+					<tr>
+						<td style='border-right: thin solid white'>2</td>
+						<td>0</td><td>0</td><td>1</td><td>0</td>
+					</tr>
+					<tr>
+						<td style='border-right: thin solid white'>4</td>
+						<td>0</td><td>1</td><td>0</td><td>0</td>
+					</tr>
+					<tr>
+						<td style='border-right: thin solid white'>5</td>
+						<td>0</td><td>1</td><td>0</td><td>1</td>
+					</tr>
+					<tr>
+						<td style='border-right: thin solid white'>5</td>
+						<td>0</td><td>1</td><td>0</td><td>1</td>
+					</tr>
+					<tr>
+						<td style='border-top: thin solid white'><b>Count:</b></td>
+						<td style='border-top: thin solid white'><b>0</b></td>
+						<td style='border-top: thin solid white'><b>3</b></td>
+						<td style='border-top: thin solid white'><b>1</b></td>
+						<td style='border-top: thin solid white'><b>2</b></td>
+					</tr>
+				</tbody>
+			</table>
+			<p>Now for the third step. The columns
+			<kbd>4<i>(2<sup>2</sup>)</i></kbd> and
+			<kbd>2<i>(2<sup>1</sup>)</i></kbd>
+			have an odd number of ones. Remember we can only take away
+			objects, and only from a single stack.
+			The only way to make all column totals even is to remove a one from
+			the <kbd>4<i>(2<sup>2</sup>)</i></kbd> and add a one to the
+			<kbd>2<i>(2<sup>1</sup>)</i></kbd> column. In decimal numbers this
+			means that we want take four objects away and put two objects back.
+			In other words, we want to take away two objects. All stacks except
+			the first one have a one in the <kbd>4<i>(2<sup>2</sup>)</i></kbd>
+			column. The player should take two objects from either the second,
+			third or fourth stack.
+			</p>
+		</div>
+		</div>
+    </body>
+</html>

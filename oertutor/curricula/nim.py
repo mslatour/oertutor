@@ -104,11 +104,7 @@ def load_db():
         pretest = test1,
         posttest = test1,
         description = (
-            "First things first, let's talk about the rules of the game. "
-            "As with each topic, you'll be asked some questions to determine "
-            "what you already knew about the topic. Then the rules will be "
-            "explained to you. After which you'll be asked some questions to "
-            "see what you've learned."
+            "First things first, let's talk about the rules of the game."
         ),
         curriculum = curr
     )
@@ -412,6 +408,12 @@ def load_db():
     Resource.factory(
         title = "An example of pair canceling",
         source = "/static/html/oer_nim_pair_canceling_2.html",
+        kc = kcs['nimsum']
+    )
+
+    Resource.factory(
+        title = "Walkthrough of pair canceling",
+        source = "/static/html/oer_nim_pair_canceling_3.html",
         kc = kcs['nimsum']
     )
 
