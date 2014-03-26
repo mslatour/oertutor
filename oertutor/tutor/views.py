@@ -1,5 +1,6 @@
 from django.shortcuts import render
 from django.http import HttpResponse, HttpResponseRedirect
+from django.conf import settings
 from decimal import Decimal
 from oertutor.ga.web import init_population, request_sequence, store_evaluation
 from oertutor.tutor.helpers import select_trial
@@ -29,6 +30,7 @@ def aws_mt(request):
             if request.session.get("student", None) is None:
                 student = Student.by_session(request.session)
                 request.session['origin'] = "aws-mt"
+                request.session['aws_mt_submit_url'] = settings.AWS_MT_SUBMIT_URL
                 request.session['aws_mt_assignmentId'] = assignment_id
                 signals.tutor_session_origin.send(
                         sender=request.session,
