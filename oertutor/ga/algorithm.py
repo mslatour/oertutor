@@ -3,21 +3,9 @@ from oertutor.ga.models import Population, Generation, Individual, \
         Chromosome, Gene
 from oertutor.ga.exceptions import ImpossibleException
 from oertutor.ga.utils import debug, DEBUG_VALUE, DEBUG_STEP
+from oertutor.ga.settings import *
 from oertutor.log import signals
-
 import random
-
-RATIO_ELITE = 0.2
-RATIO_SELECTION = 0.3
-RATIO_RECOMBINATION  = 0.2 # Population size * this ratio must be divisble by 2
-
-MIN_LEN = 1 # for solution
-MAX_LEN = 3 # for solution
-
-# RATIO_MUTATION is not necessary because the remaining number of spots in the
-# generation to fill after elitism, selection and recombination is used for
-# mutation. By doing it in this way we solve for any left-overs due to the fact
-# that depending on the population size, the ratios will not result in integers
 
 def init_population(num, population=None, genes=None):
     """
