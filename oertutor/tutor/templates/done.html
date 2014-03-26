@@ -7,7 +7,7 @@
 	<div class='panel-body well' style='padding-top:0'>
 		<h2>Excellent, you finished the lessons!</h2>
         {% if request.session.origin == "aws-mt" %}
-        <form action='https://www.mturk.com/mturk/externalSubmit' method='POST'>
+        <form action='https://workersandbox.mturk.com/mturk/externalSubmit' method='POST'>
             <input type='hidden' name='assignmentId'
              value='{{request.session.aws_mt_assignmentId}}' />
             <input type='hidden' name='student' value='{{request.session.student}}'/>
