@@ -134,6 +134,9 @@ INSTALLED_APPS = (
     'oertutor.log'
 )
 
+# The url where Amazon Mechanical Turk users need to be send back to
+AWS_MT_SUBMIT_URL = "http://www.mturk.com/mturk/externalSubmit"
+
 LOG_SIGNALS = True
 
 # A sample logging configuration. The only tangible logging
