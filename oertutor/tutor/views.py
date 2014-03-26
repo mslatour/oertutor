@@ -35,7 +35,8 @@ def aws_mt(request):
                 signals.tutor_session_origin.send(
                         sender=request.session,
                         origin='aws-mt',
-                        data={'hitId':hit_id, 'assignmentId': assignment_id },
+                        data={'hitId':hit_id, 'assignmentId': assignment_id,
+                            'workerId': request.GET.get('workerId', 'none')},
                         student=student)
     return HttpResponseRedirect('/tutor/')
 
