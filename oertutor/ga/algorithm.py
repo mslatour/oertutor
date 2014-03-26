@@ -3,12 +3,9 @@ from oertutor.ga.models import Population, Generation, Individual, \
         Chromosome, Gene
 from oertutor.ga.exceptions import ImpossibleException
 from oertutor.ga.utils import debug, DEBUG_VALUE, DEBUG_STEP
+from oertutor.ga.settings import *
 from oertutor.log import signals
-
 import random
-
-MIN_LEN = 1 # for solution
-MAX_LEN = 3 # for solution
 
 def init_population(num, population=None, genes=None):
     """

@@ -1,10 +1,6 @@
 from oertutor.ga.models import *
 from oertutor.ga import algorithm as galg
-
-MAX_EPISODES = 4;
-NUM_POP = 4;
-NUM_ELITE = 2;
-P_MUTATE = 0.05;
+from oertutor.ga.settings import *
 
 def init_population(population, genes):
     galg.init_population(NUM_POP, population, genes)
@@ -14,7 +10,7 @@ def request_sequence(population):
     # Determine number of stored evaluations:
     eval_count = Evaluation.objects.filter(generation=generation).count()
     # If not enough evaluations have been stored
-    if eval_count < MAX_EPISODES:
+    if eval_count < NUM_EPISODES:
         # Try to select the next (available) individual
         try:
             return generation.select_next_individual()
