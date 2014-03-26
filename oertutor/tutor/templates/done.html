@@ -10,7 +10,7 @@
         <form action='https://www.mturk.com/mturk/externalSubmit' method='POST'>
             <input type='hidden' name='assignmentId'
              value='{{request.session.aws_mt_assignmentId}}' />
-            <input type='hidden' name='student' value='{{request.student}}'/>
+            <input type='hidden' name='student' value='{{request.session.student}}'/>
 		{% else %}
 		<script>
 			function ajax_form(form, cb){
