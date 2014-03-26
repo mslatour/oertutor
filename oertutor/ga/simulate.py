@@ -15,6 +15,7 @@ import random
 import os
 import json
 import gc
+import re
 
 DEBUG = DEBUG_PROG | DEBUG_STEP
 MIN_SOL_LEN = 3
@@ -27,6 +28,42 @@ class Environment:
 
     def fitness(self, chromosome):
         pass
+
+class ModelSampleEnvironment(Environment):
+    model = []
+    noise = 0
+    noise_history = []
+
+    def __init__(self, model=[], noise=0):
+        """
+          model is a list of tuples (regex_string, value)
+        """
+        for pattern, value in model:
+            self.model.append((re.compile(pattern), value))
+        self.noise = noise
+
+    def optimal(self, chromosome):
+        match = str([str(gene.pk) for gene in chromosome])
+        for pattern, value in self.model:
+            if value == 1 and pattern.match(match):
+                return True
+        return False
+
+    def optimal_fitness(self, index=None):
+        cap = index + 1 if index is not None else None
+        return max(0, min(1,
+            1+(sum(self.noise_history[:cap])/len(self.noise_history[:cap]))))
+
+    def fitness(self, chromosome):
+        match = str([int(gene.pk) for gene in chromosome])
+        true_value = 0
+        for pattern, value in self.model:
+            if pattern.match(match):
+                true_value = value
+                break
+        value = max(min(random.gauss(true_value, self.noise), 1), 0)
+        self.noise_history.append(value-true_value)
+        return value
 
 class DistanceSampleEnvironment(Environment):
     solutions = None
@@ -357,6 +394,7 @@ class SimulationSuite:
                             (simulation, repetition), debug_mode & DEBUG_SUITE)
                     population = self.simulation_fn(
                             debug_mode = debug_mode,
+                            genes = self.pool,
                             fitness_fn = self.environments[environment].fitness,
                             **dict(
                                 self.default_setup.items()
@@ -487,9 +525,9 @@ def simulate( num_pool, noise, num_pop, num_iter, num_elite, p_mutate,
     return population
 
 def simulate_ga_loop( num_pop, num_iter, num_elite, p_mutate, fitness_fn,
-                      episodes_factor, debug_mode=DEBUG):
+                      episodes_factor, genes=None,debug_mode=DEBUG):
     # Init population
-    population = init_population(num_pop)
+    population = init_population(num_pop, genes=genes)
     debug("Population initialized", debug_mode & DEBUG_STEP)
     # Fetch generation
     generation = population.current_generation()

@@ -38,7 +38,10 @@ def init_population(num, population=None, genes=None):
         else:
             genes = Gene.objects.all()
     if population is None:
-        population = Population.objects.create(pool=genes)
+        population = Population.objects.create()
+        for gene in genes:
+            population.pool.add(gene)
+        population.save()
 
     individuals = []
     # Mapping to lookup chromosomes by its gene member
