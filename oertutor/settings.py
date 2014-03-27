@@ -133,7 +133,7 @@ INSTALLED_APPS = (
 )
 
 # The url where Amazon Mechanical Turk users need to be send back to
-AWS_MT_SUBMIT_URL = "https://workersandbox.mturk.com/mturk/externalSubmit"
+AWS_MT_SUBMIT_URL = "https://www.mturk.com/mturk/externalSubmit"
 
 LOG_SIGNALS = True
 
