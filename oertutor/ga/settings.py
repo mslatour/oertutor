@@ -1,7 +1,7 @@
 # Number of episodes per generation
-NUM_EPISODES = 4;
+NUM_EPISODES = 10;
 # Number of individuals in each generation of the population
-NUM_POP = 4;
+NUM_POP = 5;
 # Number of individuals that are saved by elitism
 NUM_ELITE = 2;
 # Chance of an individual mutating
