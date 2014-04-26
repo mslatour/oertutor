@@ -49,8 +49,14 @@ def population(request, pop_id):
                     data['generations'][i]['individuals'][j]['genes'].append(
                         {'id': gene.pk, 'title': resource.title, 'link':resource.source}
                     )
-    for evaluation in Evaluation.objects.filter(population=population):
-        data['regret_data'].append(1-evaluation.value)
+    mode = request.GET.get('mode', None):
+    if mode == "avg":
+        for evaluation in Evaluation.objects.filter(population=population):
+            data['regret_data'].append(1-Evaluation.fitness(
+                chromosome=evaluation.chromosome))
+    else:
+        for evaluation in Evaluation.objects.filter(population=population):
+            data['regret_data'].append(1-evaluation.value)
     return render(request, 'monitor_population.html',data)
 
 def student_index(request):
