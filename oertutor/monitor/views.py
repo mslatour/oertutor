@@ -49,7 +49,7 @@ def population(request, pop_id):
                     data['generations'][i]['individuals'][j]['genes'].append(
                         {'id': gene.pk, 'title': resource.title, 'link':resource.source}
                     )
-    mode = request.GET.get('mode', None):
+    mode = request.GET.get('mode', None)
     if mode == "avg":
         for evaluation in Evaluation.objects.filter(population=population):
             data['regret_data'].append(1-Evaluation.fitness(
