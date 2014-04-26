@@ -313,7 +313,7 @@ def crossover(parent1, parent2, population):
 def append_crossover(parent1, parent2, population):
     """
     Perform an append crossover by appending the genes of both parents in the
-    two possible ordernings. The resulting childs are checked by test_validity.
+    two possible orderings. The resulting childs are checked by test_validity.
 
     Arguments:
       parent1 - Chromosome
