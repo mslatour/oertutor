@@ -47,7 +47,8 @@ def population(request, pop_id):
                     'genes': [],
                     'fitness': individual.fitness(generation)
                 })
-            for gene in individual.chromosome.genes.all():
+            for gene in individual.chromosome.genes.order_by(
+                        "chromosomemembership__index").all():
                 try:
                     resource = gene.resource
                 except Resource.DoesNotExist:
