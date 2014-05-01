@@ -24,6 +24,7 @@ def population_index(request):
     return render(request, 'monitor_population_index.html', data)
 
 def population(request, pop_id):
+    mode = request.GET.get('mode', None)
     population = Population.objects.get(pk=pop_id)
     data = {'generations':[], 'regret_data': []}
     for i, generation in enumerate(population.generations.all()):
@@ -33,11 +34,18 @@ def population(request, pop_id):
         })
         for j, individual in enumerate(
                 generation.select_best_individuals(num=30)):
-            data['generations'][i]['individuals'].append({
-                'id': individual.pk,
-                'genes': [],
-                'fitness': individual.fitness(generation)
-            })
+            if mode == "avg":
+                data['generations'][i]['individuals'].append({
+                    'id': individual.pk,
+                    'genes': [],
+                    'fitness': individual.fitness()
+                })
+            else:
+                data['generations'][i]['individuals'].append({
+                    'id': individual.pk,
+                    'genes': [],
+                    'fitness': individual.fitness(generation)
+                })
             for gene in individual.chromosome.genes.all():
                 try:
                     resource = gene.resource
@@ -49,7 +57,6 @@ def population(request, pop_id):
                     data['generations'][i]['individuals'][j]['genes'].append(
                         {'id': gene.pk, 'title': resource.title, 'link':resource.source}
                     )
-    mode = request.GET.get('mode', None)
     if mode == "avg":
         for evaluation in Evaluation.objects.filter(population=population):
             data['regret_data'].append(1-Evaluation.fitness(
