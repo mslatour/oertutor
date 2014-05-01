@@ -38,7 +38,8 @@ def population(request, pop_id):
                 data['generations'][i]['individuals'].append({
                     'id': individual.pk,
                     'genes': [],
-                    'fitness': individual.fitness()
+                    'fitness': Evaluation.fitness(
+                        chromosome=individual.chromosome)
                 })
             else:
                 data['generations'][i]['individuals'].append({
