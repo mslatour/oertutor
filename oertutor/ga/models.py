@@ -422,7 +422,11 @@ class Individual(models.Model):#{{{
           The average fitness value of the related chromosome within the given
           scope.
         """
-        return Evaluation.fitness(chromosome=self.chromosome, generation=generation)
+        if generation is None:
+            return Evaluation.fitness(chromosome=self.chromosome)
+        else:
+            return Evaluation.fitness(chromosome=self.chromosome,
+                    generation=generation)
 
     def lock(self):
         """

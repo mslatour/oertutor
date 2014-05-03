@@ -127,7 +127,7 @@ def switch_generations(num_pop, num_elite, p_mutate, population, DEBUG=0x0):
 
     nxt_generation = elite
     for member in offspring:
-        if random.random() >= p_mutate:
+        if random.random() < p_mutate:
             try:
                 nxt_generation.append(Individual.factory(mutate(member,
                     population)))
@@ -291,10 +291,10 @@ def crossover(parent1, parent2, population):
                         chromosome = Chromosome.get_by_genes(child, population)
                         chromosome.parents.add(parent1)
                         chromosome.parents.add(parent2)
-                    except ValueError as error:
+                    except ValueError as e:
                         signals.err.send(
-                            sender=error,
-                            msg=error.strerror,
+                            sender=e,
+                            msg=str(e),
                             location="ga.algorithm.crossover")
                     except ImpossibleException:
                         # No match found
