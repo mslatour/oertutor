@@ -2,9 +2,9 @@ from copy import copy
 from oertutor.ga.models import Population, Generation, Individual, \
         Chromosome, Gene
 from oertutor.ga.exceptions import ImpossibleException
-from oertutor.ga.utils import debug, DEBUG_VALUE, DEBUG_STEP
+from oertutor.ga.utils import debug, DEBUG_VALUE, DEBUG_STEP, pdf_sample
 from oertutor.ga.settings import *
-from oertutor.log import signals
+from oertutor.ga import signals
 import random
 
 def init_population(num, population=None, genes=None):
@@ -100,6 +100,8 @@ def switch_generations(num_pop, num_elite, p_mutate, population, DEBUG=0x0):
     # Elitism
     elite = list(generation.select_best_individuals(num_elite))
     debug("%d elite members: %s" % (len(elite), elite), DEBUG & DEBUG_VALUE)
+    signals.ga_elite.send(sender=population, generation=generation,
+            elite=elite)
     num_elites = len(elite)
     if num_elites >= num_pop:
         return population.next_generation(elite[:num_pop])
@@ -109,14 +111,47 @@ def switch_generations(num_pop, num_elite, p_mutate, population, DEBUG=0x0):
         num_pop-num_elites)]
     debug("%d survivors: %s" % (len(survivors), survivors), DEBUG & DEBUG_VALUE)
 
+    # Immigration
+    immigrants = []
+    for pop in population.neighbours.all():
+        immigrants.append(pop.migrate())
+    if len(immigrants) > 0:
+        # Select worst individual
+        worst_survivor = sorted(survivors, key=lambda s: s.chromosome.fitness)[0]
+        # Select immigrant according to the PDF based on the fitness values
+        immigrant = pdf_sample(1, immigrants+[worst_survivor],
+                lambda x: max(x.fitness(),0))[0]
+        if not immigrant.pk == worst_survivor.pk:
+            index = survivors.index(worst_survivor)
+            survivors.remove(worst_survivor)
+            try:
+                lookalike = Chromosome.get_by_genes(immigrant.chromosome, population)
+            except ValueError as e:
+                signals.ga_err.send(
+                    sender=e,
+                    msg=str(e),
+                    location="ga.algorithm.immigrate")
+            except ImpossibleException:
+                pass
+            else:
+                immigrant.chromosome = lookalike
+                immigrant.save()
+            signals.ga_immigrate.send(sender=population, generation=generation,
+                    worst_individual=worst_survivor, immigrant=immigrant)
+        else:
+            immigrant = None
+    else:
+        immigrant = None
     offspring = []
+    mapping = {}
     # From the intermediate generation to the new generation
     for index in range(len(survivors)/2):
         parents = survivors[2*index:2*(index+1)]
         debug("Parents selected: %s" % (parents,), DEBUG & DEBUG_VALUE)
         try:
-            offspring += crossover(parents[0].chromosome,
-                    parents[1].chromosome, population)
+            childs, mapping = crossover(parents[0].chromosome,
+                    parents[1].chromosome, population, mapping)
+            offspring += childs
         except ImpossibleException:
             # If no children can be created, just keep the parents
             offspring += [p.chromosome for p in parents]
@@ -125,12 +160,15 @@ def switch_generations(num_pop, num_elite, p_mutate, population, DEBUG=0x0):
     # happen when the number of survivors is an odd number
     offspring += [s.chromosome for s in survivors[len(offspring):]]
 
-    nxt_generation = elite
+    if immigrant is None:
+        nxt_generation = elite
+    else:
+        nxt_generation = elite+[immigrant]
     for member in offspring:
         if random.random() < p_mutate:
             try:
-                nxt_generation.append(Individual.factory(mutate(member,
-                    population)))
+                mutation, mapping = mutate(member, population, mapping)
+                nxt_generation.append(Individual.factory(mutation))
                 debug("Mutate %s" % (member,), DEBUG & DEBUG_STEP)
             except ImpossibleException:
                 nxt_generation.append(Individual.factory(member))
@@ -139,12 +177,6 @@ def switch_generations(num_pop, num_elite, p_mutate, population, DEBUG=0x0):
 
     # New generation
     generation = population.next_generation(nxt_generation[:num_pop])
-    # Migration
-    immigrants = []
-    for pop in population.neighbours.all():
-        immigrants.append(pop.migrate())
-    if len(immigrants) > 0:
-        population.immigrate(immigrants)
     return generation
 
 def test_validity(chromosome):
@@ -153,7 +185,7 @@ def test_validity(chromosome):
         and len(chromosome) >= MIN_LEN
         and len(chromosome) <= MAX_LEN)
 
-def mutate(chromosome, population):
+def mutate(chromosome, population, mapping={}):
     functions = [mutate_swap, mutate_add, mutate_delete]
     while functions != []:
         func = random.choice(functions)
@@ -162,19 +194,30 @@ def mutate(chromosome, population):
         except ImpossibleException:
             functions.remove(func)
         else:
-            try:
-                chromosome = Chromosome.get_by_genes(mutation, population)
-                chromosome.parents.add(chromosome)
-            except ValueError as error:
-                signals.err.send(
-                    sender=error,
-                    msg=error.strerror,
-                    location="ga.algorithm.mutate")
-            except ImpossibleException:
-                # No match found
-                return Chromosome.factory(mutation, population, [chromosome])
+            if tuple(mutation) not in mapping:
+                try:
+                    new_chromosome = Chromosome.get_by_genes(mutation, population)
+                    new_chromosome.parents.add(chromosome)
+                    new_chromosome.save()
+                except ValueError as e:
+                    signals.ga_err.send(
+                        sender=e,
+                        msg=str(e),
+                        location="ga.algorithm.mutate")
+                except ImpossibleException:
+                    # No match found
+                    new_chromosome = Chromosome.factory(
+                            mutation, population, [chromosome])
+                    mapping[tuple(mutation)] = new_chromosome
+                    return (new_chromosome, mapping)
+                else:
+                    mapping[tuple(mutation)] = new_chromosome
+                    return (new_chromosome, mapping)
             else:
-                return chromosome
+                new_chromosome = mapping[tuple(mutation)]
+                new_chromosome.parents.add(chromosome)
+                new_chromosome.save()
+                return (new_chromosome, mapping)
     raise ImpossibleException
 
 def mutate_swap(chromosome, population):
@@ -272,7 +315,7 @@ def mutate_delete(chromosome, population):
     else:
         raise ImpossibleException
 
-def crossover(parent1, parent2, population):
+def crossover(parent1, parent2, population, mapping={}):
     """
     Crossover wrapper function that picks the crossover operation.
     """
@@ -284,15 +327,15 @@ def crossover(parent1, parent2, population):
             continue
         else:
             chromosomes = []
-            mapped = {}
             for child in childs:
-                if tuple(child) not in mapped:
+                if tuple(child) not in mapping:
                     try:
                         chromosome = Chromosome.get_by_genes(child, population)
                         chromosome.parents.add(parent1)
                         chromosome.parents.add(parent2)
+                        chromosome.save()
                     except ValueError as e:
-                        signals.err.send(
+                        signals.ga_err.send(
                             sender=e,
                             msg=str(e),
                             location="ga.algorithm.crossover")
@@ -300,14 +343,14 @@ def crossover(parent1, parent2, population):
                         # No match found
                         chromosome = Chromosome.factory(child,
                                 population, [parent1, parent2])
-                        mapped[tuple(child)] = chromosome
+                        mapping[tuple(child)] = chromosome
                         chromosomes.append(chromosome)
                     else:
-                        mapped[tuple(child)] = chromosome
+                        mapping[tuple(child)] = chromosome
                         chromosomes.append(chromosome)
                 else:
-                    chromosomes.append(mapped[tuple(child)])
-            return chromosomes
+                    chromosomes.append(mapping[tuple(child)])
+            return (chromosomes, mapping)
     raise ImpossibleException
 
 def append_crossover(parent1, parent2, population):

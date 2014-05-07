@@ -4,17 +4,17 @@ from django.dispatch import receiver, Signal
 from oertutor.tutor.models import Student, Trial
 from oertutor.ga.models import Population
 from oertutor.tutor.signals import tutor_session_origin
-from oertutor.ga.signals import ga_next_generation, ga_immigrate
+from oertutor.ga.signals import *
 from oertutor.settings import LOG_SIGNALS
 
-err = Signal(providing_args=["msg","location"])
-
-@receiver(err)
+@receiver(ga_err)
 def log_error(sender, msg, location, **kwargs):
     if LOG_SIGNALS:
         LogEntry.enter(
-            entry={"class": type(sender), "msg": msg, "location": location},
-            module="error",
+            entry={
+                "class": type(sender).__name__,
+                "msg": msg, "location": location},
+            module="ga/error",
             student=None
         )
 
@@ -68,6 +68,29 @@ def log_immigrate(sender, generation, worst_individual, immigrant, **kwargs):
             entry={'class':'population', 'pk': sender.pk,
                 'action':'immigrate', 'generation': generation.pk,
                 'worst_individual': worst_individual.pk, 'immigrant': immigrant.pk},
+            module="ga/population",
+            student=None
+        )
+
+@receiver(ga_bootstrap_evaluation)
+def log_bootstrap(sender, generation, individual, bootstrap, **kwargs):
+    if LOG_SIGNALS:
+        LogEntry.enter(
+            entry={'class':'population', 'pk': sender.pk,
+                'action':'bootstrap', 'generation': generation.pk,
+                'individual': individual.pk, 'bootstrap': bootstrap.pk,
+                'value': str(bootstrap.value)},
+            module="ga/population",
+            student=None
+        )
+
+@receiver(ga_elite)
+def log_elite(sender, generation, elite, **kwargs):
+    if LOG_SIGNALS:
+        LogEntry.enter(
+            entry={'class':'population', 'pk': sender.pk,
+                'action':'elite_preservation', 'generation': generation.pk,
+                'elite': str([str(e.pk) for e in elite])},
             module="ga/population",
             student=None
         )
