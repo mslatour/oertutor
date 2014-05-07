@@ -465,6 +465,9 @@ class Individual(models.Model):#{{{
             # Make sure the local copy is also updated
             self.locked = None
 
+    def bootstrap_str(self):
+        return str([int(g.pk) for g in self.chromosome.genes.all()])
+
     def __str__(self):
         return self.__repr__()
 
@@ -492,23 +495,18 @@ class Individual(models.Model):#{{{
     def __copy__(self):
         return Individual.factory(self.chromosome)#}}}
 
-class BootstrapEvaluation(models.Model):
-    chromosome = models.CharField(max_length=255)
-    population = models.ForeignKey('Population', related_name='+')
-    value = models.DecimalField(null=True, max_digits=10, decimal_places=9)
-    used = models.BooleanField(default=False)
-
 class Evaluation(models.Model):#{{{
     chromosome = models.ForeignKey('Chromosome', related_name='+')
     individual = models.ForeignKey('Individual', related_name='+')
     generation = models.ForeignKey('Generation', related_name='+')
     population = models.ForeignKey('Population', related_name='+')
     value = models.DecimalField(null=True, max_digits=10, decimal_places=9)
+    datetime = models.DateTimeField(auto_now = True, null=True)
 
     @staticmethod
     def factory(generation, individual, fitness):
         chromosome = individual.chromosome
-        Evaluation.objects.create(
+        evaluation = Evaluation.objects.create(
                 generation=generation,
                 individual=individual,
                 chromosome=chromosome,
@@ -525,6 +523,7 @@ class Evaluation(models.Model):#{{{
         chromosome.age = chromosome.age + 1
         chromosome.fitness = aggregate
         chromosome.save()
+        return evaluation
 
     @staticmethod
     def fitness(**filters):

@@ -73,14 +73,15 @@ def log_immigrate(sender, generation, worst_individual, immigrant, **kwargs):
         )
 
 @receiver(ga_bootstrap_evaluation)
-def log_bootstrap(sender, generation, individual, bootstrap, **kwargs):
+def log_bootstrap(sender, sequence, bootstrap, **kwargs):
     if LOG_SIGNALS:
         LogEntry.enter(
             entry={'class':'population', 'pk': sender.pk,
-                'action':'bootstrap', 'generation': generation.pk,
-                'individual': individual.pk, 'bootstrap': bootstrap.pk,
+                'action':'bootstrap',
+                'generation': sender.current_generation().pk,
+                'individual': sequence.pk, 'bootstrap': bootstrap.pk,
                 'value': str(bootstrap.value)},
-            module="ga/population",
+            module="tutor/sequence",
             student=None
         )
 

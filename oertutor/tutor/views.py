@@ -7,7 +7,7 @@ from oertutor.tutor.helpers import select_trial
 from oertutor.tutor import signals
 from oertutor.helpers import select_curriculum
 from oertutor.tutor.models import KnowledgeComponent, Student, \
-        StudentCategory, Resource
+        StudentCategory, Resource, BootstrapEvaluation
 from django.forms.models import modelform_factory
 
 def aws_mt(request):
@@ -107,7 +107,31 @@ def tutor(request):
         if trial is not None:
             kc = trial.kc
             if trial.sequence is None:
-                trial.sequence = request_sequence(trial.category)
+                sequence = None
+                while sequence is not None:
+                    sequence = request_sequence(trial.category)
+                    # Attempt to find bootstrap value
+                    bootstraps = BootstrapEvaluation.objects.\
+                        order_by('pk').filter(
+                            sequence = sequence.bootstrap_str()
+                            category = trial.category,
+                            used = False)
+                    if len(bootstraps) > 0:
+                        print "bootstrapping %s in %s" % (sequence, category)
+                        bootstrap = bootstraps[0]
+                        signals.ga_bootstrap_evaluation.send(
+                                sender=category,
+                                sequence=sequence,
+                                bootstrap=bootstrap)
+                        evaluation = store_evaluation(sequence, category,
+                                bootstrap.value)
+                        bootstrap.trial.evaluation = evaluation
+                        bootstrap.trial.save()
+                        bootstrap.used = True
+                        bootstrap.save()
+                        sequence = None
+                # Assign sequence to student
+                trial.sequence = sequence
                 trial.save()
             return render(request, 'resource.html', {
                 'url': request.build_absolute_uri(),
@@ -178,11 +202,12 @@ def next_step(request):
             if trial is not None:
                 result = trial.kc.posttest.grade(request.POST, student)
                 trial.posttest_result = result
-                trial.save()
                 postscore = Decimal(result.score)
                 prescore = Decimal(trial.pretest_result.score)
                 nlg = (postscore-prescore) / (Decimal(1)-prescore)
-                store_evaluation(trial.sequence, trial.category, nlg)
+                evaluation = store_evaluation(trial.sequence, trial.category, nlg)
+                trial.evaluation = evaluation
+                trial.save()
                 next_trial = select_trial(student)
                 if next_trial is not None:
                     student.phase = Student.INTRO

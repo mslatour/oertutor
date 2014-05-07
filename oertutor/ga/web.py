@@ -20,33 +20,12 @@ def request_sequence(population):
             Individual.release_oldest_lock()
             return request_sequence(population)
         else:
-            if attempt_bootstrap(individual, population):
-                return request_sequence(population)
-            else:
-                return individual
+            return individual
     else:
         # State: Enough evaluations performed for this generation
         galg.switch_generations(NUM_POP, NUM_ELITE, P_MUTATE, population)
         return request_sequence(population)
 
-def attempt_bootstrap(individual, population):
-    # Calculate chromosome hash
-    chromosome = str([int(g.pk) for g in individual.chromosome.genes.all()])
-    bootstraps = BootstrapEvaluation.objects.order_by('pk').filter(
-        chromosome=chromosome, population=population, used=False)
-    if len(bootstraps) == 0:
-        return False
-    else:
-        bootstrap = bootstraps[0]
-        signals.ga_bootstrap_evaluation.send(
-                sender=population,
-                generation=population.current_generation(),
-                individual=individual,
-                bootstrap=bootstrap)
-        store_evaluation(individual, population, bootstrap.value)
-        bootstrap.used = True
-        bootstrap.save()
-        return True
-
 def store_evaluation(individual, population, evaluation):
-    Evaluation.factory(population.current_generation(), individual, evaluation)
+    return Evaluation.factory(population.current_generation(),
+        individual, evaluation)

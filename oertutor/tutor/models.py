@@ -1,6 +1,6 @@
 from django.db import models
 from django import forms
-from oertutor.ga.models import Gene, Individual, Population
+from oertutor.ga.models import Gene, Individual, Population, Evaluation
 
 class Student(models.Model):
     NEW = 'new'
@@ -115,11 +115,19 @@ class Trial(models.Model):
     sequence_position = models.SmallIntegerField(default=0)
     posttest_result = models.ForeignKey('TestResult', related_name='+',
             null=True)
+    evaluation = models.ForeignKey(Evaluation, null=True, related_name='+')
     category = models.ForeignKey('StudentCategory', null=True)
     datetime = models.DateTimeField(auto_now = True)
 
     class Meta:
         verbose_name = "Knowledge Component Explanation"
+
+class BootstrapEvaluation(models.Model):
+    sequence = models.CharField(max_length=255)
+    category = models.ForeignKey('StudentCategory', related_name='+')
+    trial = models.ForeignKey(Trial, null=True, related_name='+')
+    value = models.DecimalField(null=True, max_digits=10, decimal_places=9)
+    used = models.BooleanField(default=False)
 
 class Resource(Gene):
     title = models.CharField(max_length=50)
