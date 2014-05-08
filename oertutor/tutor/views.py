@@ -108,22 +108,21 @@ def tutor(request):
             kc = trial.kc
             if trial.sequence is None:
                 sequence = None
-                while sequence is not None:
+                while sequence is None:
                     sequence = request_sequence(trial.category)
                     # Attempt to find bootstrap value
                     bootstraps = BootstrapEvaluation.objects.\
                         order_by('pk').filter(
-                            sequence = sequence.bootstrap_str()
+                            sequence = sequence.bootstrap_str(),
                             category = trial.category,
                             used = False)
                     if len(bootstraps) > 0:
-                        print "bootstrapping %s in %s" % (sequence, category)
                         bootstrap = bootstraps[0]
-                        signals.ga_bootstrap_evaluation.send(
-                                sender=category,
+                        signals.tutor_bootstrap_evaluation.send(
+                                sender=trial.category,
                                 sequence=sequence,
                                 bootstrap=bootstrap)
-                        evaluation = store_evaluation(sequence, category,
+                        evaluation = store_evaluation(sequence, trial.category,
                                 bootstrap.value)
                         bootstrap.trial.evaluation = evaluation
                         bootstrap.trial.save()

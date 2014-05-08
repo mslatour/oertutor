@@ -3,7 +3,7 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver, Signal
 from oertutor.tutor.models import Student, Trial
 from oertutor.ga.models import Population
-from oertutor.tutor.signals import tutor_session_origin
+from oertutor.tutor.signals import *
 from oertutor.ga.signals import *
 from oertutor.settings import LOG_SIGNALS
 
@@ -72,7 +72,7 @@ def log_immigrate(sender, generation, worst_individual, immigrant, **kwargs):
             student=None
         )
 
-@receiver(ga_bootstrap_evaluation)
+@receiver(tutor_bootstrap_evaluation)
 def log_bootstrap(sender, sequence, bootstrap, **kwargs):
     if LOG_SIGNALS:
         LogEntry.enter(
