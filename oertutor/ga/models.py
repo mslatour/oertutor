@@ -83,7 +83,7 @@ class Gene(models.Model):#{{{
 class Chromosome(models.Model):#{{{
     genes = models.ManyToManyField('Gene', through='ChromosomeMembership',
             related_name='chromosomes')
-    parents = models.ManyToManyField('self', related_name='children')
+    parents = models.ManyToManyField('self', symmetrical=False, related_name='children')
     population = models.ForeignKey('Population', related_name='chromosomes')
     fitness = models.DecimalField(null=True, max_digits=10, decimal_places=9)
     age = models.PositiveIntegerField(default=0)
@@ -150,7 +150,7 @@ class Chromosome(models.Model):#{{{
         length = len(genes)
         shortlist = filter(lambda x: len(x)==length, shortlist)
         # Ensure that the chromosomes exist in this population
-        shortlist = filter(lambda x: x.population==population, shortlist)
+        shortlist = filter(lambda x: x.population.pk==population.pk, shortlist)
         # If there are no lookalikes left that met every criteria
         if len(shortlist) == 0:
             raise ImpossibleException('No matches found.')
@@ -183,7 +183,7 @@ class Chromosome(models.Model):#{{{
         shortlist = None
         # Fetch candidates for each gene membership
         for mem in members:
-            candidates = [mem.chromosome for mem in
+            candidates = [m.chromosome for m in
                     base_query.filter(gene=mem.gene, index=mem.index)]
             if shortlist is None:
                 shortlist = candidates
@@ -198,7 +198,8 @@ class Chromosome(models.Model):#{{{
         length = len(members)
         lookalikes = filter(lambda x: len(x)==length, shortlist)
         # Ensure that the chromosomes exist in this population
-        lookalikes = filter(lambda x: x.population==population, lookalikes)
+        lookalikes = filter(lambda x: x.population==chromosome.population,
+                lookalikes)
         # If there are no lookalikes left that met every criteria
         if len(lookalikes) == 0:
             raise ImpossibleException('No lookalikes found.')
@@ -400,11 +401,12 @@ class Individual(models.Model):#{{{
 
     @staticmethod
     def release_oldest_lock():
-        obj = Individual.objects.exclude(locked=None).order_by('locked')
-        try:
-            obj.unlock()
-        except ImpossibleException:
-            pass
+        objs = Individual.objects.exclude(locked=None).order_by('locked')
+        if len(objs) > 0:
+            try:
+                objs[0].unlock()
+            except ImpossibleException:
+                pass
 
     def fitness(self, generation=None):
         """
@@ -422,14 +424,18 @@ class Individual(models.Model):#{{{
           The average fitness value of the related chromosome within the given
           scope.
         """
-        return Evaluation.fitness(chromosome=self.chromosome, generation=generation)
+        if generation is None:
+            return Evaluation.fitness(chromosome=self.chromosome)
+        else:
+            return Evaluation.fitness(chromosome=self.chromosome,
+                    generation=generation)
 
     def lock(self):
         """
         Lock the individual to prevent it from being chosen twice. This could
         happen because the individual could be presented to a user before
         evaluation can occur, this means that multiple asynchronous events
-        could attempg to use the same chromosome. Individual are locked within
+        could attempt to use the same chromosome. Individual are locked within
         a particular generation.
 
         Raises:
@@ -458,6 +464,9 @@ class Individual(models.Model):#{{{
         else:
             # Make sure the local copy is also updated
             self.locked = None
+
+    def bootstrap_str(self):
+        return str([int(g.pk) for g in self.chromosome.genes.all()])
 
     def __str__(self):
         return self.__repr__()
@@ -492,11 +501,12 @@ class Evaluation(models.Model):#{{{
     generation = models.ForeignKey('Generation', related_name='+')
     population = models.ForeignKey('Population', related_name='+')
     value = models.DecimalField(null=True, max_digits=10, decimal_places=9)
+    datetime = models.DateTimeField(auto_now = True, null=True)
 
     @staticmethod
     def factory(generation, individual, fitness):
         chromosome = individual.chromosome
-        Evaluation.objects.create(
+        evaluation = Evaluation.objects.create(
                 generation=generation,
                 individual=individual,
                 chromosome=chromosome,
@@ -513,6 +523,7 @@ class Evaluation(models.Model):#{{{
         chromosome.age = chromosome.age + 1
         chromosome.fitness = aggregate
         chromosome.save()
+        return evaluation
 
     @staticmethod
     def fitness(**filters):
@@ -677,10 +688,10 @@ class Generation(models.Model):#{{{
                 sorted_members = sorted(members, key=
                     lambda x: (x.fitness + (1/x.age)) if x.age > 0 else 'Inf',
                     reverse=True)
-            except Exception as error:
-                signals.err.send(
-                    sender=error,
-                    msg=error.strerror,
+            except Exception as e:
+                signals.ga_err.send(
+                    sender=e,
+                    msg=str(e),
                     location="ga.models.generation.select_next_individual")
             return sorted_members[0].individual
 
@@ -802,7 +813,18 @@ class Population(models.Model):#{{{
         # Prepare integration of immigrant
         immigrant = deepcopy(immigrant)
         immigrant.chromosome.population = self
+        immigrant.chromosome.age = 0
+        immigrant.chromosome.fitness = None
         immigrant.chromosome.save()
+        try:
+            Chromosome.merge_lookalike(immigrant.chromosome)
+        except ValueError as e:
+            signals.ga_err.send(
+                sender=e,
+                msg=str(e),
+                location="ga.population.immigrate")
+        except ImpossibleException:
+            pass
         # Immigrate the picked immigrant
         generation.add_individuals([immigrant])
         signals.ga_immigrate.send(sender=self, generation=generation,

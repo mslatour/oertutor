@@ -38,4 +38,3 @@ def grade_test(request, student, test):
     result.score = score
     result.save()
     return result
-
