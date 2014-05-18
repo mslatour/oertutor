@@ -35,19 +35,14 @@ def population(request, pop_id):
             mem = GenerationMembership.objects.get(
                     generation=generation, individual=best)
             genbest[generation.pk] = mem.fitness
-            print "for generation %d select individual %d w fitness %.12f" % (
-                generation.pk, best.pk, mem.fitness)
     elif maxmode == "popbest":
         popbest = Decimal(0)
         for generation in population.generations.all():
             best = generation.select_best_individuals()[0]
             mem = GenerationMembership.objects.get(
                     generation=generation, individual=best)
-            print "best chromosome fitness", best.chromosome.fitness
             if popbest < Decimal(best.chromosome.fitness):
                 popbest = best.chromosome.fitness
-                print "set population best to fitness %.12f" % (
-                    best.chromosome.fitness)
 
     data = {'generations':[], 'regret_data': []}
     for i, generation in enumerate(population.generations.all()):
@@ -126,7 +121,6 @@ def population(request, pop_id):
                         generation=evaluation.generation,
                         individual=evaluation.individual)
                 value = mem.chromosome.fitness
-                print maxvalue, value
             else:
                 maxvalue = 1
                 value = evaluation.value
