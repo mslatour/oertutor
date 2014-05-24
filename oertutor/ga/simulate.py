@@ -11,6 +11,10 @@ from difflib import SequenceMatcher
 from pytz import timezone
 from datetime import datetime
 from math import factorial
+from copy import copy
+import matplotlib.pyplot as plt
+from numpy import std
+import cPickle as pickle
 import random
 import os
 import json
@@ -43,7 +47,7 @@ class ModelSampleEnvironment(Environment):
         self.noise = noise
 
     def optimal(self, chromosome):
-        match = str([str(gene.pk) for gene in chromosome])
+        match = str([gene.pk for gene in chromosome])
         for pattern, value in self.model:
             if value == 1 and pattern.match(match):
                 return True
@@ -113,14 +117,189 @@ class DistanceSampleEnvironment(Environment):
         self.noise_history.append(value-distance)
         return value
 
+class TabularCell:
+    values = []
+    _cast = None
+
+    def __init__(self, value=None, cast=None):
+        self._cast = cast
+        self.values = []
+        if value is not None:
+            self.append(value)
+
+    def __int__(self):
+        aggr = sum([int(value) for value in self.values])
+        return aggr / len(self)
+
+    def __long__(self):
+        aggr = sum([long(value) for value in self.values])
+        return aggr / long(len(self))
+
+    def __float__(self):
+        aggr = sum([float(value) for value in self.values])
+        return aggr / float(len(self))
+
+    def decimal(self):
+        aggr = sum([Decimal(value) for value in self.values])
+        return aggr / Decimal(len(self))
+
+    def __str__(self):
+        if self._cast in [float, int, long]:
+            return str(self._cast(self))
+        elif self._cast == Decimal:
+            return str(self.decimal())
+        elif self._cast == str:
+            return ",".join(self.values)
+        else:
+            return ",".join([str(value) for value in self.values])
+
+    def __repr__(self):
+        return "TabularCell(%s)" % (self,)
+
+    def __len__(self):
+        return len(self.values)
+
+    def __iter__(self):
+        return iter(self.values)
+
+    def __reversed__(self):
+        return reversed(self.tabular)
+
+    def __contains__(self, item):
+        return item in self.tabular
+
+    def cast(self, cast=None):
+        if cast is None:
+            return self._cast
+        elif cast != self._cast:
+            self._cast = cast
+            self.values = [self._cast(value) for value in self.values]
+
+    def std(self):
+        return std(self.values)
+
+    def append(self, value):
+        if isinstance(value, TabularCell):
+            if self._cast is None:
+                self._cast = value.cast()
+
+            if self._cast != value.cast:
+                self.values += [self._cast(elem) for elem in value]
+            else:
+                self.values += list(value)
+        else:
+            if self._cast is None:
+                self._cast = type(value)
+                self.values.append(value)
+            else:
+                self.values.append(self._cast(value))
+
+    def __getitem__(self, key):
+        return self.tabular[key]
+
+    def __setitem__(self, key, value):
+        if isinstance(value, list):
+            value = TabularData(value)
+        self.tabular[key] = value
+
+    def __delitem__(self, key):
+        del self.tabular[key]
+
+
+class TabularData:
+    tabular = []
+    labels = []
+    pointer = 0
+
+    def __init__(self, data=[], labels=[]):
+        self.tabular = []
+        self.labels = labels
+        self.pointer = 0
+        if isinstance(data, list):
+            for elem in data:
+                self.append(elem)
+        else:
+            raise ValueError("List expected, got %s" % (type(data),))
+
+    def append(self, data):
+        if isinstance(data, list):
+            data = TabularData(data)
+        elif not isinstance(data, TabularData):
+            data = TabularCell(data)
+        if self.pointer == len(self.tabular):
+            self.tabular.append(data)
+        else:
+            if type(data) != type(self.tabular[self.pointer]):
+                raise ValueError("Impossible to merge %s, %s" % (
+                    type(data), type(self.tabular[self.pointer])))
+            if isinstance(data, TabularData):
+                for elem in data:
+                    self.tabular[self.pointer].append(elem)
+            else:
+                self.tabular[self.pointer].append(data)
+        self.pointer += 1
+
+    def reset(self):
+        self.pointer = 0
+        for elem in self.tabular:
+            if isinstance(elem, TabularData):
+                elem.reset()
+
+    def __copy__(self):
+        tab = TabularData(copy(self.tabular))
+        tab.labels = copy(self.labels)
+        tab.pointer = self.pointer
+        return tab
+
+    def __getitem__(self, key):
+        return self.tabular[key]
+
+    def __setitem__(self, key, value):
+        if isinstance(value, list):
+            value = TabularData(value)
+        self.tabular[key] = value
+
+    def __delitem__(self, key):
+        del self.tabular[key]
+
+    def __add__(self, other):
+        for elem in other:
+            self.append(elem)
+        return self
+
+    def __radd__(self, other):
+        return self.__add__(other)
+
+    def __str__(self):
+        return str(self.tabular)
+
+    def __repr__(self):
+        return "TabularData(%s)" % (self,)
+
+    def __len__(self):
+        return len(self.tabular)
+
+    def __iter__(self):
+        return iter(self.tabular)
+
+    def __reversed__(self):
+        return reversed(self.tabular)
+
+    def __contains__(self, item):
+        return item in self.tabular
+
+    def __missing__(self, key):
+        return self.tabular.__missing__(key)
+
 class Exporter:
     output = None
+    filename_pattern = "export_%s_%s_%s_%s.dat"
 
     def before(self, simulation, suite, analyzer, output_dir=None):
         if output_dir is not None:
             stamp = datetime.now(timezone('Europe/Amsterdam')).strftime(
                     "%Y-%m-%d-%H%M")
-            path = "export_%s_%s_%s_%s.dat" % (suite, analyzer, simulation,
+            path = self.filename_pattern % (suite, analyzer, simulation,
                     stamp)
             self.output = open(output_dir+path, 'w')
 
@@ -131,6 +310,8 @@ class Exporter:
             self.after()
 
     def _export(self, results):
+        if results.labels != []:
+            self.output_line(" ".join(results.labels))
         for row in results:
             self.output_line(" ".join([str(c) for c in row]))
 
@@ -144,75 +325,75 @@ class Exporter:
         else:
             self.output.write("%s\n" % (line,))
 
+class PickleExporter(Exporter):
+
+    def __init__(self):
+        self.filename_pattern = "export_%s_%s_%s_%s.pickle"
+
+    def _export(self, results):
+        if self.output is None:
+            print pickle.dumps(results)
+        else:
+            pickle.dump(results, self.output)
+
 class JoinedExporter(Exporter):
     def export(self, results, setups, suite, analyzer, output_dir=None):
-        joined_results = None
+        joined_results = TabularData()
         sorted_results = sorted(results.items(), key=lambda x: len(x[1]),
                 reverse=True)
+
+        labels = None
         for simulation, result in sorted_results:
-            for index, row in enumerate(result):
-                if index == 0:
-                    if joined_results is None:
-                        joined_results = [[result[0][0]]]
-                    joined_results[0] += [l+"-"+simulation
-                            for l in result[0][1:]]
+            if labels is None:
+                if len(result.labels) == 1:
+                    labels = []
                 else:
-                    if index > (len(joined_results)-1):
-                        joined_results.append(row)
+                    labels = [result.labels[0]]
+            if len(result.labels) == 1:
+                labels += [l+"-"+simulation for l in result.labels[:]]
+            else:
+                labels += [l+"-"+simulation for l in result.labels[1:]]
+
+            print "0",result
+            for index, row in enumerate(result):
+                row = copy(row)
+                print "1",index
+                if index > (len(joined_results)-1):
+                    print "2",len(joined_results)
+                    joined_results.append(row)
+                else:
+                    if len(result.labels) == 1:
+                       print "3",joined_results[index], row[:]
+                       joined_results[index] += row[:]
                     else:
-                        joined_results[index] += row[1:]
+                       joined_results[index] += row[1:]
+        joined_results.labels = labels
         self.before("joined", suite, analyzer, output_dir)
         self._export(joined_results)
         self.after()
 
+class JoinedPickleExporter(JoinedExporter):
+
+    def __init__(self):
+        self.filename_pattern = "export_%s_%s_%s_%s.pickle"
+
+    def _export(self, results):
+        if self.output is None:
+            print pickle.dumps(results)
+        else:
+            pickle.dump(results, self.output)
+
 class Analyzer:
-    def analyze(self, population, setup):
+    def analyze(self, population, setup, environment, results=None):
         pass
 
-    def combine(self, results):
-        if len(results) == 1:
-            return results[0]
-        result_iter = iter(results)
-        results1 = next(result_iter)
-        for i, results2 in enumerate(result_iter):
-            if results1 == results2:
-                return results1
-            elif len(results1) != len(results2):
-                raise Exception('Result sets have different size')
-            results1 = self.combine_aux(i, results1, results2)
-        del result_iter
-        del results
-        return results1
-
-    def combine_aux(self, i, results1, results2):
-        results = []
-        for index, elem1 in enumerate(results1):
-            elem2 = results2[index]
-            if elem1 == elem2:
-                results.append(elem1)
-            elif not (
-                isinstance(elem1, type(elem2))
-                or (
-                    isinstance(elem1, (int, float, Decimal)) and
-                    isinstance(elem2, (int, float, Decimal))
-                )
-            ):
-                raise Exception('Elements must have the same type.')
-            elif isinstance(elem1, list):
-                results.append(self.combine_aux(i, elem1, elem2))
-            elif isinstance(elem1, (int, float, Decimal)):
-                results.append(
-                        ((i+1)*Decimal(str(elem1))+Decimal(str(elem2)))/(i+2))
-            else:
-                print elem1, elem2
-                raise Exception('Elements cannot be combined.')
-        return results
-
 class RegretAnalyzer(Analyzer):
-    def analyze(self, population, setup, environment, **kwargs):
-        results = [["evaluation", "regret"]]
+    def analyze(self, population, setup, environment, results=None, **kwargs):
+        if results is None:
+            results = TabularData()
+        results.labels = ["evaluation", "regret"]
         evaluations = enumerate(
-                Evaluation.objects.filter(population=population))
+            Evaluation.objects.order_by('pk').filter(population=population))
         optimal_expected_value = 0
         for index, evaluation in evaluations:
             optimal_expected_value *= index
@@ -226,11 +407,13 @@ class RegretAnalyzer(Analyzer):
         return results
 
 class CumulativeRegretAnalyzer(Analyzer):
-    def analyze(self, population, setup, environment, **kwargs):
-        results = [["evaluation", "regret"]]
+    def analyze(self, population, setup, environment, results=None, **kwargs):
+        if results is None:
+            results = TabularData()
+        results.labels = ["evaluation", "regret"]
         regret = 0
         evaluations = enumerate(
-                Evaluation.objects.filter(population=population))
+            Evaluation.objects.order_by('pk').filter(population=population))
         for index, evaluation in evaluations:
             if environment.optimal(evaluation.chromosome):
                 results.append([index, regret])
@@ -244,9 +427,34 @@ class CumulativeRegretAnalyzer(Analyzer):
         del evaluations
         return results
 
+class ConvergenceAnalyzer(Analyzer):
+    _threshold = 1
+
+    def __init__(self, threshold=1):
+        self._threshold = threshold
+
+    def analyze(self, population, setup, environment, results=None, **kwargs):
+        if results is None:
+            results = TabularData()
+        results.labels = ["convergence"]
+        evaluations = enumerate(
+            Evaluation.objects.order_by('pk').filter(population=population))
+        counter = 0
+        for index, evaluation in evaluations:
+            if environment.optimal(evaluation.chromosome):
+                counter += 1
+                if counter == self._threshold:
+                    break
+            else:
+                counter = 0
+        results.append([float(index)])
+        return results
+
 class EvaluationAnalyzer(Analyzer):
-    def analyze(self, population, setup, **kwargs):
-        results = [["evaluation", "regret"]]
+    def analyze(self, population, setup, environment, results=None, **kwargs):
+        if results is None:
+            results = TabularData()
+        results.labels = ["evaluation", "regret"]
         evaluations = enumerate(
                 Evaluation.objects.filter(population=population))
         for index, evaluation in evaluations:
@@ -255,8 +463,10 @@ class EvaluationAnalyzer(Analyzer):
         return results
 
 class EvaluationChoiceAnalyzer(Analyzer):
-    def analyze(self, population, setup, **kwargs):
-        results = [["evaluation", "chromosome"]]
+    def analyze(self, population, setup, environment, results=None, **kwargs):
+        if results is None:
+            results = TabularData()
+        results.labels = ["evaluation", "chromosome"]
         evaluations = enumerate(
                 Evaluation.objects.filter(population=population))
         for index, evaluation in evaluations:
@@ -270,8 +480,10 @@ class EvaluationChoiceAnalyzer(Analyzer):
         return results[0]
 
 class CoverageAnalyzer(Analyzer):
-    def analyze(self, population, setup, **kwargs):
-        results = [["generation", "coverage"]]
+    def analyze(self, population, setup, environment, results=None, **kwargs):
+        if results is None:
+            results = TabularData()
+        results.labels = ["evaluation", "coverage"]
         num_pool = setup['num_pool']
         total = (Decimal(sum([factorial(num_pool)/factorial(num_pool-l)
             for l in xrange(1, num_pool+1)])))
@@ -287,8 +499,10 @@ class CoverageAnalyzer(Analyzer):
         return results
 
 class FitnessAnalyzer(Analyzer):
-    def analyze(self, population, setup, **kwargs):
-        results = [["generation", "best", "average", "worst"]]
+    def analyze(self, population, setup, environment, results=None, **kwargs):
+        if results is None:
+            results = TabularData()
+        results.labels = ["generation", "best", "average", "worst"]
         generations = enumerate(population.generations.all())
         for index, generation in generations:
             best = generation.individuals.aggregate(
@@ -302,9 +516,11 @@ class FitnessAnalyzer(Analyzer):
         return results
 
 class FitnessAllAnalyzer(Analyzer):
-    def analyze(self, population, setup, **kwargs):
-        results = [["generation"]+[str(i) for i in xrange(1,
-            population.current_generation().individuals.count()+1)]]
+    def analyze(self, population, setup, environment, results=None, **kwargs):
+        if results is None:
+            results = TabularData()
+        results.labels = ["generation"]+[str(i) for i in xrange(1,
+            population.current_generation().individuals.count()+1)]
         generations = enumerate(population.generations.all())
         for index, generation in generations:
             values = [index]
@@ -404,13 +620,7 @@ class SimulationSuite:
                             debug_mode)
                     del population
                     reset_queries()
-                    #clear(False)
-                debug('Combining %d repetitions' % (repetitions, ),
-                        debug_mode & DEBUG_SUITE)
-                for analyzer in self.results[environment]:
-                    self.results[environment][analyzer][simulation] = \
-                        self.analyzers[analyzer].combine(
-                            self.results[environment][analyzer][simulation])
+                    clear(False)
             debug("Exporting", debug_mode & DEBUG_SUITE)
             self.export(environment)
 
@@ -421,15 +631,17 @@ class SimulationSuite:
             if analyzer not in self.results[environment]:
                 self.results[environment][analyzer] = {}
             if simulation not in self.results[environment][analyzer]:
-                self.results[environment][analyzer][simulation] = []
+                self.results[environment][analyzer][simulation] = TabularData()
 
             debug("Running %s on %s in %s" % (analyzer, simulation,
                 environment), debug_mode & DEBUG_SUITE)
-            self.results[environment][analyzer][simulation].append(
-                    self.analyzers[analyzer].analyze(
-                        population = population,
-                        setup = self.setups[simulation],
-                        environment = self.environments[environment]))
+
+            self.results[environment][analyzer][simulation].reset()
+            self.analyzers[analyzer].analyze(
+                population = population,
+                setup = self.setups[simulation],
+                environment = self.environments[environment],
+                results = self.results[environment][analyzer][simulation])
 
     def export(self, environment):
         if len(self.environments) > 1:
