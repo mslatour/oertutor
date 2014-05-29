@@ -176,7 +176,10 @@ class TabularCell:
             self.values = [self._cast(value) for value in self.values]
 
     def std(self):
-        return std(self.values)
+        if self._cast == Decimal:
+            return std([float(v) for v in self.values])
+        else:
+            return std(self.values)
 
     def append(self, value):
         if isinstance(value, TabularCell):
@@ -354,16 +357,12 @@ class JoinedExporter(Exporter):
             else:
                 labels += [l+"-"+simulation for l in result.labels[1:]]
 
-            print "0",result
             for index, row in enumerate(result):
                 row = copy(row)
-                print "1",index
                 if index > (len(joined_results)-1):
-                    print "2",len(joined_results)
                     joined_results.append(row)
                 else:
                     if len(result.labels) == 1:
-                       print "3",joined_results[index], row[:]
                        joined_results[index] += row[:]
                     else:
                        joined_results[index] += row[1:]
@@ -484,7 +483,10 @@ class CoverageAnalyzer(Analyzer):
         if results is None:
             results = TabularData()
         results.labels = ["evaluation", "coverage"]
-        num_pool = setup['num_pool']
+        if "num_pool" in setup:
+            num_pool = setup['num_pool']
+        else:
+            num_pool = len(population.pool)
         total = (Decimal(sum([factorial(num_pool)/factorial(num_pool-l)
             for l in xrange(1, num_pool+1)])))
         coverage = set([])
