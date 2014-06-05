@@ -213,6 +213,7 @@ class TabularData:
     tabular = []
     labels = []
     pointer = 0
+    _cast = None
 
     def __init__(self, data=[], labels=[]):
         self.tabular = []
@@ -228,7 +229,7 @@ class TabularData:
         if isinstance(data, list):
             data = TabularData(data)
         elif not isinstance(data, TabularData):
-            data = TabularCell(data)
+            data = TabularCell(data, cast=self._cast)
         if self.pointer == len(self.tabular):
             self.tabular.append(data)
         else:
@@ -241,6 +242,36 @@ class TabularData:
             else:
                 self.tabular[self.pointer].append(data)
         self.pointer += 1
+
+    def select(self, labels):
+        selected = TabularData()
+        indices = []
+        for label in labels:
+            if isinstance(label, int):
+                indices.append(label)
+                if self.labels != []:
+                    selected.labels.append(self.labels[label])
+            else:
+                selected.labels.append(label)
+                try:
+                    indices.append(self.labels.index(label))
+                except:
+                    raise KeyError("Unknown label: %s" % (label,))
+
+        for row in self:
+            selected_row = TabularData()
+            for index in indices:
+                selected_row.append(row[index])
+            selected.append(selected_row)
+        return selected
+
+    def cast(self, cast=None):
+        if cast is None:
+            return self._cast
+        else:
+            self._cast = cast
+            for elem in self:
+                elem.cast(cast)
 
     def reset(self):
         self.pointer = 0
@@ -486,16 +517,16 @@ class CoverageAnalyzer(Analyzer):
         if "num_pool" in setup:
             num_pool = setup['num_pool']
         else:
-            num_pool = len(population.pool)
+            num_pool = population.pool.count()
         total = (Decimal(sum([factorial(num_pool)/factorial(num_pool-l)
             for l in xrange(1, num_pool+1)])))
         coverage = set([])
-        generations = enumerate(population.generations.all())
-        for index, generation in generations:
-            for individual in generation.individuals.all():
-                coverage.add(tuple(individual.chromosome))
+        evaluations = enumerate(
+                Evaluation.objects.filter(population=population))
+        for index, evaluation in evaluations:
+            coverage.add(tuple(evaluation.chromosome))
             results.append([index, Decimal(len(coverage))/total])
-        del generations
+        del evaluations
         del coverage
         del total
         return results

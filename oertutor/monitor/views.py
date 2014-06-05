@@ -41,13 +41,16 @@ def population(request, pop_id):
             if mode == "avg":
                 data['generations'][i]['individuals'].append({
                     'id': individual.pk,
+                    'chromosome': individual.chromosome,
                     'genes': [],
                     'fitness': Evaluation.fitness(
-                        chromosome=individual.chromosome)
+                        chromosome=individual.chromosome,
+                        population=population)
                 })
             else:
                 data['generations'][i]['individuals'].append({
                     'id': individual.pk,
+                    'chromosome': individual.chromosome,
                     'genes': [],
                     'fitness': individual.fitness(generation)
                 })
