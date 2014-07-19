@@ -1,7 +1,7 @@
 oertutor
 ========
 
-Web-based tutor using RL techniques to select best OER. Code is still in development, not a stable release.
+Web-based tutor using genetic algorithm techniques to select best OER. Code is still in development, not a stable release. There are known issues with multiple student groups per lesson. If you are interested, it is best to send me a message.
 
 Disclaimer
 ----------
